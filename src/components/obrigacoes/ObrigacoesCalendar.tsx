@@ -56,21 +56,25 @@ export function ObrigacoesCalendar({
             const remainingCount = statusCounts && statusCounts.length > 4 ? statusCounts.length - 4 : 0;
             
             return (
-              <div className="relative w-full h-full flex flex-col items-center justify-start p-1.5 overflow-hidden">
-                <span className="text-sm font-bold mb-0.5">{date.getDate()}</span>
+              <div className="relative w-full h-full flex flex-col items-center justify-start p-2 md:p-2.5 xl:p-3 overflow-hidden select-none">
+                <span className="leading-none font-semibold text-[10px] md:text-xs xl:text-sm mb-0.5">{date.getDate()}</span>
                 {visibleBadges.length > 0 && (
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="mt-1 grid grid-cols-2 gap-1 justify-items-center content-start auto-rows-[1.125rem] md:auto-rows-[1.25rem] xl:auto-rows-[1.5rem]">
                     {visibleBadges.map(({ status, count }) => (
                       <div
                         key={status}
+                        title={`${status} - ${count}`}
                         style={{ backgroundColor: STATUS_CONFIG[status].chart }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-sm"
+                        className="rounded-full flex items-center justify-center text-white font-bold shadow-sm w-4 h-4 md:w-5 md:h-5 xl:w-6 xl:h-6 text-[9px] md:text-[10px] xl:text-[11px]"
                       >
                         {count}
                       </div>
                     ))}
                     {remainingCount > 0 && (
-                      <div className="w-6 h-6 rounded-full bg-gray-500 flex items-center justify-center text-[9px] text-white font-bold shadow-sm">
+                      <div
+                        className="rounded-full bg-muted-foreground flex items-center justify-center text-white font-bold shadow-sm w-4 h-4 md:w-5 md:h-5 xl:w-6 xl:h-6 text-[8px] md:text-[9px] xl:text-[10px]"
+                        title={`+${remainingCount} mais`}
+                      >
                         +{remainingCount}
                       </div>
                     )}
@@ -85,19 +89,19 @@ export function ObrigacoesCalendar({
         <p className="text-sm font-semibold">Legenda:</p>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center gap-2">
-            <div style={{ backgroundColor: STATUS_CONFIG.overdue.chart }} className="h-5 w-5 rounded-full shadow-sm" />
+            <div style={{ backgroundColor: STATUS_CONFIG.overdue.chart }} className="h-4 w-4 md:h-5 md:w-5 rounded-full shadow-sm" />
             <span>Vencida</span>
           </div>
           <div className="flex items-center gap-2">
-            <div style={{ backgroundColor: STATUS_CONFIG.due_48h.chart }} className="h-5 w-5 rounded-full shadow-sm" />
+            <div style={{ backgroundColor: STATUS_CONFIG.due_48h.chart }} className="h-4 w-4 md:h-5 md:w-5 rounded-full shadow-sm" />
             <span>Vence em 48h</span>
           </div>
           <div className="flex items-center gap-2">
-            <div style={{ backgroundColor: STATUS_CONFIG.pending.chart }} className="h-5 w-5 rounded-full shadow-sm" />
+            <div style={{ backgroundColor: STATUS_CONFIG.pending.chart }} className="h-4 w-4 md:h-5 md:w-5 rounded-full shadow-sm" />
             <span>No prazo</span>
           </div>
           <div className="flex items-center gap-2">
-            <div style={{ backgroundColor: STATUS_CONFIG.on_time_done.chart }} className="h-5 w-5 rounded-full shadow-sm" />
+            <div style={{ backgroundColor: STATUS_CONFIG.on_time_done.chart }} className="h-4 w-4 md:h-5 md:w-5 rounded-full shadow-sm" />
             <span>Concluída</span>
           </div>
         </div>

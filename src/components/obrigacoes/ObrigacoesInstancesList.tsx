@@ -90,7 +90,7 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       <div className="flex items-center gap-2">
         <Switch
           id="show-completed"
@@ -118,8 +118,8 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
         const completedCount = completed.length;
 
         return (
-          <div key={dateKey} className="space-y-3">
-            <div className="flex items-baseline justify-between border-b pb-2">
+          <div key={dateKey} className="space-y-3 min-w-0">
+            <div className="flex items-baseline justify-between border-b pb-2 gap-2">
               <h3 className="text-lg font-semibold uppercase">
                 {format(new Date(dateKey), "EEE, dd/MM/yyyy", { locale: ptBR })}
               </h3>
