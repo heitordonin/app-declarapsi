@@ -19,6 +19,7 @@ interface ClientObligation {
   };
   client: {
     created_at: string;
+    obligations_start_date: string | null;
   };
 }
 
@@ -50,7 +51,8 @@ Deno.serve(async (req) => {
           legal_due_rule
         ),
         client:clients!inner(
-          created_at
+          created_at,
+          obligations_start_date
         )
       `)
       .eq('active', true);
@@ -67,7 +69,10 @@ Deno.serve(async (req) => {
     const monthsAhead = 12;
 
     for (const co of (clientObligations as any as ClientObligation[])) {
-      const startDate = new Date(co.created_at);
+      // Usar obligations_start_date se existir, senão usar created_at do vínculo
+      const startDate = co.client.obligations_start_date 
+        ? new Date(co.client.obligations_start_date)
+        : new Date(co.created_at);
       
       // Gerar competências baseadas na frequência
       const competences = generateCompetences(
