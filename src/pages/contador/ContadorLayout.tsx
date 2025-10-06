@@ -1,58 +1,27 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { CalendarDays, Mail, Users, LogOut, FileText, BarChart, Settings, PieChart } from 'lucide-react';
+import { Outlet } from 'react-router-dom';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { ContadorSidebar } from '@/components/contador/ContadorSidebar';
 
 export default function ContadorLayout() {
-  const { signOut } = useAuth();
-  const location = useLocation();
-
-  const navItems = [
-    { icon: CalendarDays, label: 'Obrigações', path: '/contador/obrigacoes' },
-    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
-    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
-    { icon: BarChart, label: 'Protocolos', path: '/contador/protocolos' },
-    { icon: Settings, label: 'Configurações', path: '/contador/configuracoes' },
-    { icon: Mail, label: 'Comunicados', path: '/contador/comunicados' },
-    { icon: Users, label: 'Clientes', path: '/contador/clientes' },
-  ];
-
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card">
-        <div className="p-6">
-          <h1 className="text-xl font-bold text-foreground">Área do Contador</h1>
-        </div>
-        <nav className="space-y-1 px-3">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <Link key={item.path} to={item.path}>
-                <Button
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  className="w-full justify-start"
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {item.label}
-                </Button>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="absolute bottom-4 left-3 right-3">
-          <Button variant="outline" className="w-full justify-start" onClick={() => signOut()}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <Outlet />
-      </main>
-    </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex w-full bg-background">
+        <ContadorSidebar />
+        
+        <main className="flex-1 overflow-auto">
+          <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center gap-4 px-4">
+              <SidebarTrigger />
+              <h2 className="text-lg font-semibold">Área do Contador</h2>
+            </div>
+          </header>
+          
+          <div className="p-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 }
+
