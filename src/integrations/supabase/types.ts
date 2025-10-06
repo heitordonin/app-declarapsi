@@ -607,6 +607,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      client_in_user_org: {
+        Args: { _client_id: string; _user_id: string }
+        Returns: boolean
+      }
+      communication_in_user_org: {
+        Args: { _communication_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_user_org: {
         Args: { _user_id: string }
         Returns: string
