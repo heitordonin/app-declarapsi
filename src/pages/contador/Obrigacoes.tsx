@@ -44,15 +44,15 @@ export default function Obrigacoes() {
         </TabsList>
 
         <TabsContent value="calendario" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-4">
               <ObrigacoesCalendar
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
                 instancesByDate={instancesByDate}
               />
             </div>
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-8">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">

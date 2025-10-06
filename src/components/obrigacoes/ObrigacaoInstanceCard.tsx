@@ -3,7 +3,7 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getStatusStyles, type ObligationStatus } from '@/lib/obligation-status-utils';
+import { getStatusStyles, STATUS_CONFIG, type ObligationStatus } from '@/lib/obligation-status-utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -59,39 +59,53 @@ export function ObrigacaoInstanceCard({ instance }: ObligacaoInstanceCardProps) 
   const isDone = instance.status === 'on_time_done' || instance.status === 'late_done';
 
   return (
-    <Card className={`p-4 ${statusStyles.bg} ${statusStyles.border} border-l-4`}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3 flex-1">
-          <StatusIcon className={`h-5 w-5 ${statusStyles.text} mt-1`} />
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-foreground">{instance.obligation.name}</h3>
-            <p className="text-sm text-muted-foreground">{instance.client.name}</p>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Badge variant="outline" className="text-xs">
-                Competência: {instance.competence}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                Vencimento: {format(new Date(instance.due_at), "dd 'de' MMMM", { locale: ptBR })}
-              </Badge>
-            </div>
+    <Card className="p-3 hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-3">
+        <div 
+          style={{ backgroundColor: STATUS_CONFIG[instance.status].chart }}
+          className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+        >
+          <StatusIcon className="h-4 w-4 text-white" />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-foreground text-base leading-tight">
+            {instance.obligation.name}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {instance.client.name}
+          </p>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+              {instance.competence}
+            </Badge>
+            <Badge 
+              style={{ 
+                backgroundColor: STATUS_CONFIG[instance.status].chart + '20',
+                color: STATUS_CONFIG[instance.status].chart,
+                borderColor: STATUS_CONFIG[instance.status].chart
+              }}
+              className="text-[10px] py-0 px-1.5 border"
+            >
+              {statusStyles.label}
+            </Badge>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <Badge className={`${statusStyles.badge} text-white`}>
-            {statusStyles.label}
-          </Badge>
+
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
           {!isDone && (
             <Button
               size="sm"
               onClick={() => completeMutation.mutate()}
               disabled={completeMutation.isPending}
+              className="h-7 text-xs"
             >
               {completeMutation.isPending ? 'Salvando...' : 'Concluir'}
             </Button>
           )}
           {isDone && instance.completed_at && (
-            <p className="text-xs text-muted-foreground">
-              Concluída em {format(new Date(instance.completed_at), 'dd/MM/yyyy')}
+            <p className="text-[10px] text-muted-foreground text-right">
+              Concluída em<br/>{format(new Date(instance.completed_at), 'dd/MM/yyyy')}
             </p>
           )}
         </div>
