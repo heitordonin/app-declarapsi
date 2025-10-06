@@ -155,11 +155,43 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
         .eq('id', upload.id);
       
       if (updateError) throw updateError;
+
+      // Auto-complete obligation instance
+      const { data: instance, error: instanceError } = await supabase
+        .from('obligation_instances')
+        .select('id, status, internal_target_at')
+        .eq('client_id', values.client_id)
+        .eq('obligation_id', values.obligation_id)
+        .eq('competence', values.competence)
+        .maybeSingle();
+
+      if (instanceError) {
+        console.error('Erro ao buscar instância:', instanceError);
+      } else if (instance && instance.status !== 'on_time_done' && instance.status !== 'late_done') {
+        // Determine if completed on time or late
+        const today = new Date().toISOString().split('T')[0];
+        const isOnTime = today <= instance.internal_target_at;
+        const newStatus = isOnTime ? 'on_time_done' : 'late_done';
+
+        const { error: completeError } = await supabase
+          .from('obligation_instances')
+          .update({
+            status: newStatus,
+            completed_at: new Date().toISOString(),
+            completion_notes: 'Concluída automaticamente via upload de documento'
+          })
+          .eq('id', instance.id);
+
+        if (completeError) {
+          console.error('Erro ao concluir instância automaticamente:', completeError);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
       queryClient.invalidateQueries({ queryKey: ['documents'] });
-      toast.success('Documento classificado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['obligation-instances'] });
+      toast.success('Documento classificado e obrigação concluída automaticamente!');
       onOpenChange(false);
       form.reset();
     },
