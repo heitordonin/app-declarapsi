@@ -5,6 +5,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,6 +25,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Calendar } from 'lucide-react';
+import { CompleteObligationDialog } from './CompleteObligationDialog';
 
 interface ClientInstance {
   instance_id: string;
@@ -42,10 +53,11 @@ export function ObrigacaoClientsDialog({
   clients,
 }: ObrigacaoClientsDialogProps) {
   const queryClient = useQueryClient();
-  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [completingInstanceId, setCompletingInstanceId] = useState<string | null>(null);
+  const [unmarkingInstanceId, setUnmarkingInstanceId] = useState<string | null>(null);
 
   const completeMutation = useMutation({
-    mutationFn: async (instanceId: string) => {
+    mutationFn: async ({ instanceId, notes }: { instanceId: string; notes: string }) => {
       const now = new Date();
       const dueDate = new Date(internal_target_at);
       const isLate = now > dueDate;
@@ -56,6 +68,7 @@ export function ObrigacaoClientsDialog({
         .update({
           status: newStatus,
           completed_at: now.toISOString(),
+          completion_notes: notes,
         })
         .eq('id', instanceId);
 
@@ -65,12 +78,50 @@ export function ObrigacaoClientsDialog({
       queryClient.invalidateQueries({ queryKey: ['obligation-instances'] });
       queryClient.invalidateQueries({ queryKey: ['calendar-instances'] });
       toast.success('Obrigação marcada como concluída');
-      setCompletingId(null);
+      setCompletingInstanceId(null);
     },
     onError: (error) => {
       console.error('Erro ao concluir obrigação:', error);
       toast.error('Erro ao concluir obrigação');
-      setCompletingId(null);
+      setCompletingInstanceId(null);
+    },
+  });
+
+  const unmarkMutation = useMutation({
+    mutationFn: async (instanceId: string) => {
+      const now = new Date();
+      const targetDate = new Date(internal_target_at);
+      const diffTime = targetDate.getTime() - now.getTime();
+      const diffHours = diffTime / (1000 * 60 * 60);
+
+      let newStatus: ObligationStatus = 'pending';
+      if (now > targetDate) {
+        newStatus = 'overdue';
+      } else if (diffHours <= 48) {
+        newStatus = 'due_48h';
+      }
+
+      const { error } = await supabase
+        .from('obligation_instances')
+        .update({
+          status: newStatus,
+          completed_at: null,
+          completion_notes: null,
+        })
+        .eq('id', instanceId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['obligation-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-instances'] });
+      toast.success('Conclusão desmarcada');
+      setUnmarkingInstanceId(null);
+    },
+    onError: (error) => {
+      console.error('Erro ao desmarcar obrigação:', error);
+      toast.error('Erro ao desmarcar obrigação');
+      setUnmarkingInstanceId(null);
     },
   });
 
@@ -117,7 +168,6 @@ export function ObrigacaoClientsDialog({
               const statusStyles = getStatusStyles(client.status);
               const StatusIcon = statusStyles.icon;
               const isDone = client.status === 'on_time_done' || client.status === 'late_done';
-              const isCompleting = completingId === client.instance_id;
 
               return (
                 <div
@@ -159,13 +209,20 @@ export function ObrigacaoClientsDialog({
                   {!isDone && (
                     <Button
                       size="sm"
-                      onClick={() => {
-                        setCompletingId(client.instance_id);
-                        completeMutation.mutate(client.instance_id);
-                      }}
-                      disabled={isCompleting || completeMutation.isPending}
+                      onClick={() => setCompletingInstanceId(client.instance_id)}
+                      disabled={completeMutation.isPending}
                     >
-                      {isCompleting ? 'Salvando...' : 'Concluir'}
+                      Concluir
+                    </Button>
+                  )}
+                  {isDone && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setUnmarkingInstanceId(client.instance_id)}
+                      disabled={unmarkMutation.isPending}
+                    >
+                      Desmarcar
                     </Button>
                   )}
                 </div>
@@ -173,6 +230,53 @@ export function ObrigacaoClientsDialog({
             })}
           </div>
         </ScrollArea>
+
+        <CompleteObligationDialog
+          open={!!completingInstanceId}
+          onOpenChange={(open) => !open && setCompletingInstanceId(null)}
+          onConfirm={(notes) => {
+            if (completingInstanceId) {
+              completeMutation.mutate({ instanceId: completingInstanceId, notes });
+            }
+          }}
+          isLoading={completeMutation.isPending}
+          obligationName={obligation_name}
+          clientName={
+            completingInstanceId
+              ? clients.find((c) => c.instance_id === completingInstanceId)?.client_name
+              : undefined
+          }
+        />
+
+        <AlertDialog
+          open={!!unmarkingInstanceId}
+          onOpenChange={(open) => !open && setUnmarkingInstanceId(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Desmarcar conclusão?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta obrigação será marcada como não concluída e voltará ao status pendente.
+                A justificativa será removida.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={unmarkMutation.isPending}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (unmarkingInstanceId) {
+                    unmarkMutation.mutate(unmarkingInstanceId);
+                  }
+                }}
+                disabled={unmarkMutation.isPending}
+              >
+                {unmarkMutation.isPending ? 'Processando...' : 'Desmarcar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );

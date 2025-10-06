@@ -356,6 +356,7 @@ export type Database = {
           client_id: string
           competence: string
           completed_at: string | null
+          completion_notes: string | null
           created_at: string
           due_at: string
           id: string
@@ -369,6 +370,7 @@ export type Database = {
           client_id: string
           competence: string
           completed_at?: string | null
+          completion_notes?: string | null
           created_at?: string
           due_at: string
           id?: string
@@ -382,6 +384,7 @@ export type Database = {
           client_id?: string
           competence?: string
           completed_at?: string | null
+          completion_notes?: string | null
           created_at?: string
           due_at?: string
           id?: string
