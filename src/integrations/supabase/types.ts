@@ -175,6 +175,7 @@ export type Database = {
           email_status: Database["public"]["Enums"]["email_event_type"]
           id: string
           sent_at: string | null
+          viewed_at: string | null
         }
         Insert: {
           client_id: string
@@ -182,6 +183,7 @@ export type Database = {
           email_status?: Database["public"]["Enums"]["email_event_type"]
           id?: string
           sent_at?: string | null
+          viewed_at?: string | null
         }
         Update: {
           client_id?: string
@@ -189,6 +191,7 @@ export type Database = {
           email_status?: Database["public"]["Enums"]["email_event_type"]
           id?: string
           sent_at?: string | null
+          viewed_at?: string | null
         }
         Relationships: [
           {
@@ -209,6 +212,7 @@ export type Database = {
       }
       communications: {
         Row: {
+          attachments: Json | null
           id: string
           message: string
           org_id: string
@@ -218,6 +222,7 @@ export type Database = {
           total_recipients: number
         }
         Insert: {
+          attachments?: Json | null
           id?: string
           message: string
           org_id: string
@@ -227,6 +232,7 @@ export type Database = {
           total_recipients: number
         }
         Update: {
+          attachments?: Json | null
           id?: string
           message?: string
           org_id?: string
