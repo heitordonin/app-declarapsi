@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ObrigacoesCalendar } from '@/components/obrigacoes/ObrigacoesCalendar';
@@ -10,7 +10,6 @@ import type { ObligationStatus } from '@/lib/obligation-status-utils';
 export default function Obrigacoes() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  // Buscar todas as instâncias para o calendário
   const { data: allInstances } = useQuery({
     queryKey: ['calendar-instances'],
     queryFn: async () => {
@@ -23,7 +22,6 @@ export default function Obrigacoes() {
     },
   });
 
-  // Agrupar instâncias por data
   const instancesByDate: Record<string, ObligationStatus[]> = {};
   allInstances?.forEach((instance) => {
     const dateStr = instance.due_at;
@@ -34,56 +32,59 @@ export default function Obrigacoes() {
   });
 
   return (
-    <div className="p-6 md:p-8 max-w-[1200px] mx-auto">
-      <h1 className="text-3xl font-bold text-foreground mb-6">Obrigações</h1>
-      
-      <Tabs defaultValue="calendario" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="calendario">Calendário & Instâncias</TabsTrigger>
-          <TabsTrigger value="cadastro">Cadastro de Obrigações</TabsTrigger>
-        </TabsList>
+    <div className="p-6 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-foreground mb-6">Obrigações</h1>
+        
+        <Tabs defaultValue="calendario" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="calendario">Calendário & Instâncias</TabsTrigger>
+            <TabsTrigger value="cadastro">Cadastro de Obrigações</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="calendario" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-6 xl:col-span-7">
-              <ObrigacoesCalendar
-                selectedDate={selectedDate}
-                onSelectDate={setSelectedDate}
-                instancesByDate={instancesByDate}
-              />
-            </div>
-            <div className="lg:col-span-6 xl:col-span-5 min-w-0">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">
-                    {selectedDate
-                      ? `Obrigações - ${selectedDate.toLocaleDateString('pt-BR')}`
-                      : 'Todas as Obrigações'}
-                  </h2>
-                  {selectedDate && (
-                    <button
-                      onClick={() => setSelectedDate(undefined)}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Limpar filtro
-                    </button>
-                  )}
+          <TabsContent value="calendario">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="lg:col-span-1">
+                <ObrigacoesCalendar
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                  instancesByDate={instancesByDate}
+                />
+              </div>
+              
+              <div className="lg:col-span-1 min-w-0">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold">
+                      {selectedDate
+                        ? `Obrigações - ${selectedDate.toLocaleDateString('pt-BR')}`
+                        : 'Todas as Obrigações'}
+                    </h2>
+                    {selectedDate && (
+                      <button
+                        onClick={() => setSelectedDate(undefined)}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Limpar filtro
+                      </button>
+                    )}
+                  </div>
+                  <ObrigacoesInstancesList selectedDate={selectedDate} />
                 </div>
-                <ObrigacoesInstancesList selectedDate={selectedDate} />
               </div>
             </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        <TabsContent value="cadastro">
-          <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Gerencie as obrigações fiscais que serão vinculadas aos clientes.
-            </p>
-            <ObrigacoesList onEdit={() => {}} />
-          </div>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="cadastro">
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                Gerencie as obrigações fiscais que serão vinculadas aos clientes.
+              </p>
+              <ObrigacoesList onEdit={() => {}} />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
