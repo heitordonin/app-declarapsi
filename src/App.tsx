@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import ContadorLayout from "./pages/contador/ContadorLayout";
 import Obrigacoes from "./pages/contador/Obrigacoes";
+import Relatorios from "./pages/contador/Relatorios";
 import Conferencia from "./pages/contador/Conferencia";
 import Protocolos from "./pages/contador/Protocolos";
 import Configuracoes from "./pages/contador/Configuracoes";
@@ -57,6 +58,7 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route path="obrigacoes" element={<Obrigacoes />} />
+              <Route path="relatorios" element={<Relatorios />} />
               <Route path="conferencia" element={<Conferencia />} />
               <Route path="protocolos" element={<Protocolos />} />
               <Route path="configuracoes" element={<Configuracoes />} />

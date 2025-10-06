@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Mail, Users, LogOut, FileText, BarChart, Settings } from 'lucide-react';
+import { CalendarDays, Mail, Users, LogOut, FileText, BarChart, Settings, PieChart } from 'lucide-react';
 
 export default function ContadorLayout() {
   const { signOut } = useAuth();
@@ -9,6 +9,7 @@ export default function ContadorLayout() {
 
   const navItems = [
     { icon: CalendarDays, label: 'Obrigações', path: '/contador/obrigacoes' },
+    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
     { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
     { icon: BarChart, label: 'Protocolos', path: '/contador/protocolos' },
     { icon: Settings, label: 'Configurações', path: '/contador/configuracoes' },
