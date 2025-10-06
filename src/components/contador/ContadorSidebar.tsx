@@ -11,7 +11,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarHeader,
 } from '@/components/ui/sidebar';
+import logo from '@/assets/logo-declara-psi.png';
 
 const navItems = [
   { icon: CalendarDays, label: 'Obrigações', path: '/contador/obrigacoes' },
@@ -29,6 +31,10 @@ export function ContadorSidebar() {
 
   return (
     <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b p-4">
+        <img src={logo} alt="Declara Psi" className="w-full h-auto" />
+      </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Área do Contador</SidebarGroupLabel>
