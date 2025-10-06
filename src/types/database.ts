@@ -57,8 +57,8 @@ export interface Obligation {
   name: string;
   frequency: FrequencyType;
   internal_target_day: number;
-  legal_due_rule?: string;
-  notes?: string;
+  legal_due_rule?: number | null;
+  notes?: string | null;
   created_at: string;
   updated_at: string;
 }

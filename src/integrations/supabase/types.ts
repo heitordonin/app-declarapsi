@@ -408,7 +408,7 @@ export type Database = {
           frequency: Database["public"]["Enums"]["frequency_type"]
           id: string
           internal_target_day: number
-          legal_due_rule: string | null
+          legal_due_rule: number | null
           name: string
           notes: string | null
           org_id: string
@@ -419,7 +419,7 @@ export type Database = {
           frequency: Database["public"]["Enums"]["frequency_type"]
           id?: string
           internal_target_day: number
-          legal_due_rule?: string | null
+          legal_due_rule?: number | null
           name: string
           notes?: string | null
           org_id: string
@@ -430,7 +430,7 @@ export type Database = {
           frequency?: Database["public"]["Enums"]["frequency_type"]
           id?: string
           internal_target_day?: number
-          legal_due_rule?: string | null
+          legal_due_rule?: number | null
           name?: string
           notes?: string | null
           org_id?: string

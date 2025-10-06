@@ -21,7 +21,11 @@ const obrigacaoSchema = z.object({
   internal_target_day: z.coerce.number()
     .min(1, 'Dia deve ser entre 1 e 31')
     .max(31, 'Dia deve ser entre 1 e 31'),
-  legal_due_rule: z.string().optional(),
+  legal_due_rule: z.coerce.number()
+    .min(1, 'Dia deve ser entre 1 e 31')
+    .max(31, 'Dia deve ser entre 1 e 31')
+    .optional()
+    .nullable(),
   notes: z.string().optional()
 });
 
@@ -43,7 +47,7 @@ export function EditObrigacaoDialog({ open, onOpenChange, obrigacao }: EditObrig
       name: "",
       frequency: undefined,
       internal_target_day: 10,
-      legal_due_rule: "",
+      legal_due_rule: undefined,
       notes: ""
     }
   });
@@ -54,8 +58,8 @@ export function EditObrigacaoDialog({ open, onOpenChange, obrigacao }: EditObrig
         name: obrigacao.name,
         frequency: obrigacao.frequency,
         internal_target_day: obrigacao.internal_target_day,
-        legal_due_rule: obrigacao.legal_due_rule || "",
-        notes: obrigacao.notes || ""
+        legal_due_rule: obrigacao.legal_due_rule ?? undefined,
+        notes: obrigacao.notes ?? ""
       });
     }
   }, [obrigacao, form]);
@@ -158,10 +162,13 @@ export function EditObrigacaoDialog({ open, onOpenChange, obrigacao }: EditObrig
               name="legal_due_rule"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vencimento Legal</FormLabel>
+                  <FormLabel>Dia do Vencimento Legal</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Ex: Último dia útil do mês" 
+                    <Input 
+                      type="number" 
+                      min={1} 
+                      max={31} 
+                      placeholder="10"
                       {...field} 
                     />
                   </FormControl>

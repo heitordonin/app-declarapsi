@@ -38,7 +38,7 @@ export function ObrigacaoCard({ obrigacao, onEdit, onArchive }: ObrigacaoCardPro
         {obrigacao.legal_due_rule && (
           <div className="text-sm">
             <span className="font-medium text-muted-foreground">Vencimento Legal:</span>{" "}
-            <span className="text-foreground">{obrigacao.legal_due_rule}</span>
+            <span className="text-foreground">Dia {obrigacao.legal_due_rule}</span>
           </div>
         )}
         
