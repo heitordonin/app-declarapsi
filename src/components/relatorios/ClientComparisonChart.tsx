@@ -24,7 +24,22 @@ export function ClientComparisonChart({
       </Card>;
   }
   return <Card>
-      
-      
+      <CardHeader>
+        <CardTitle>Comparação por Cliente</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={350}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="clientName" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="completed" fill="#22c55e" name="Concluídas" />
+            <Bar dataKey="pending" fill="#94a3b8" name="Pendentes" />
+            <Bar dataKey="overdue" fill="#ef4444" name="Vencidas" />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
     </Card>;
 }

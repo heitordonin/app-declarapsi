@@ -18,9 +18,11 @@ export default function Relatorios() {
   const { data: generalStats, isLoading: loadingGeneral } = useQuery({
     queryKey: ['general-stats', selectedMonth],
     queryFn: async () => {
-      // Converter formato YYYY-MM para MM/YYYY
+      // Calcular range de datas para o mês selecionado
       const [year, month] = selectedMonth.split('-');
-      const competencePattern = `${month}/${year}`;
+      const firstDay = `${year}-${month}-01`;
+      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
+      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -28,7 +30,8 @@ export default function Relatorios() {
           status,
           client:clients!inner(org_id)
         `)
-        .eq('competence', competencePattern);
+        .gte('due_at', firstDay)
+        .lt('due_at', lastDay);
 
       if (error) throw error;
 
@@ -51,9 +54,15 @@ export default function Relatorios() {
     queryFn: async () => {
       const months = Array.from({ length: 6 }, (_, i) => {
         const date = subMonths(new Date(), 5 - i);
+        const [year, month] = format(date, 'yyyy-MM').split('-');
+        const firstDay = `${year}-${month}-01`;
+        const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
+        const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
+        
         return {
           value: format(date, 'yyyy-MM'),
-          label: format(date, 'MM/yyyy'),
+          firstDay,
+          lastDay,
           display: format(date, "MMM/yy", { locale: ptBR }),
         };
       });
@@ -66,7 +75,8 @@ export default function Relatorios() {
               status,
               client:clients!inner(org_id)
             `)
-            .eq('competence', month.label);
+            .gte('due_at', month.firstDay)
+            .lt('due_at', month.lastDay);
 
           if (error) throw error;
 
@@ -91,7 +101,9 @@ export default function Relatorios() {
     queryKey: ['client-comparison', selectedMonth],
     queryFn: async () => {
       const [year, month] = selectedMonth.split('-');
-      const competencePattern = `${month}/${year}`;
+      const firstDay = `${year}-${month}-01`;
+      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
+      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -99,7 +111,8 @@ export default function Relatorios() {
           status,
           client:clients!inner(id, name, org_id)
         `)
-        .eq('competence', competencePattern);
+        .gte('due_at', firstDay)
+        .lt('due_at', lastDay);
 
       if (error) throw error;
 
@@ -136,7 +149,9 @@ export default function Relatorios() {
     queryKey: ['instances-detail', selectedMonth],
     queryFn: async () => {
       const [year, month] = selectedMonth.split('-');
-      const competencePattern = `${month}/${year}`;
+      const firstDay = `${year}-${month}-01`;
+      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
+      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -148,7 +163,8 @@ export default function Relatorios() {
           client:clients!inner(name, org_id),
           obligation:obligations(name)
         `)
-        .eq('competence', competencePattern)
+        .gte('due_at', firstDay)
+        .lt('due_at', lastDay)
         .order('due_at', { ascending: true });
 
       if (error) throw error;
@@ -160,9 +176,11 @@ export default function Relatorios() {
   const { data: obligationStats, isLoading: loadingObligations } = useQuery({
     queryKey: ['obligation-stats', selectedMonth],
     queryFn: async () => {
-      // Converter formato YYYY-MM para MM/YYYY
+      // Calcular range de datas para o mês selecionado
       const [year, month] = selectedMonth.split('-');
-      const competencePattern = `${month}/${year}`;
+      const firstDay = `${year}-${month}-01`;
+      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
+      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -171,7 +189,8 @@ export default function Relatorios() {
           obligation:obligations(id, name),
           client:clients!inner(org_id)
         `)
-        .eq('competence', competencePattern);
+        .gte('due_at', firstDay)
+        .lt('due_at', lastDay);
 
       if (error) throw error;
 
