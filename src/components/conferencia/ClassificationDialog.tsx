@@ -180,6 +180,24 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       
       if (updateError) throw updateError;
 
+      // Get the created document ID for email notification
+      const { data: newDocument } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('file_path', newPath)
+        .single();
+
+      // Send notification email (don't await - fire and forget)
+      if (newDocument) {
+        supabase.functions.invoke('send-document-notification', {
+          body: { documentId: newDocument.id }
+        }).then(({ error: emailError }) => {
+          if (emailError) {
+            console.error('Erro ao enviar notificação de documento:', emailError);
+          }
+        });
+      }
+
       // Auto-complete obligation instance
       const { data: instance, error: instanceError } = await supabase
         .from('obligation_instances')

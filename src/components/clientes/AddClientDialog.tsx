@@ -116,10 +116,20 @@ export function AddClientDialog() {
 
       if (error) throw error;
 
-      // If generateAccess is true, create user
+      // If generateAccess is true, create user and send welcome email
       if (data.generateAccess) {
-        // TODO: Call edge function to create user and send invite email
-        console.log("TODO: Generate access for client", client.id);
+        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            clientId: client.id,
+            clientName: data.name,
+            email: data.email,
+          }
+        });
+
+        if (emailError) {
+          console.error('Erro ao enviar email de boas-vindas:', emailError);
+          throw new Error('Cliente criado, mas houve erro ao enviar o email de boas-vindas');
+        }
       }
 
       return client;
