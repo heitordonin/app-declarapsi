@@ -90,7 +90,7 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
   };
 
   return (
-    <div className="max-h-[800px] overflow-y-auto pr-2 space-y-6">
+    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-6">
       <div className="flex items-center gap-2 sticky top-0 bg-background pb-4 z-10">
         <Switch
           id="show-completed"
