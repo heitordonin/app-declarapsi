@@ -13,6 +13,7 @@ interface WelcomeEmailRequest {
   clientId: string;
   clientName: string;
   email: string;
+  appUrl: string;
 }
 
 serve(async (req) => {
@@ -26,7 +27,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { clientId, clientName, email }: WelcomeEmailRequest = await req.json();
+    const { clientId, clientName, email, appUrl }: WelcomeEmailRequest = await req.json();
 
     console.log('Creating auth user for client:', { clientId, email });
 
@@ -71,13 +72,13 @@ serve(async (req) => {
       throw roleError;
     }
 
-    // Gerar magic link para definir senha
+    // Gerar link de recuperação para definir senha
     const { data: magicLinkData, error: magicLinkError } = await supabaseClient.auth.admin
       .generateLink({
-        type: 'magiclink',
+        type: 'recovery',
         email,
         options: {
-          redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`,
+          redirectTo: `${appUrl}/auth/callback`,
         },
       });
 

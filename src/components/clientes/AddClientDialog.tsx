@@ -123,6 +123,7 @@ export function AddClientDialog() {
             clientId: client.id,
             clientName: data.name,
             email: data.email,
+            appUrl: window.location.origin,
           }
         });
 
