@@ -2,6 +2,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ObligationStatus } from '@/lib/obligation-status-utils';
 import { STATUS_CONFIG } from '@/lib/obligation-status-utils';
+import { format } from 'date-fns';
 
 interface ObrigacoesCalendarProps {
   selectedDate: Date | undefined;
@@ -33,7 +34,7 @@ export function ObrigacoesCalendar({
 
   const modifiers = {
     hasObrigacoes: (date: Date) => {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = format(date, 'yyyy-MM-dd');
       return instancesByDate[dateStr] && instancesByDate[dateStr].length > 0;
     },
   };
@@ -56,7 +57,7 @@ export function ObrigacoesCalendar({
           modifiersClassNames={modifiersClassNames}
           components={{
             DayContent: ({ date }) => {
-              const dateStr = date.toISOString().split('T')[0];
+              const dateStr = format(date, 'yyyy-MM-dd');
               const counts = getStatusCounts(dateStr);
               
               const statusesWithCounts = (Object.entries(counts) as [ObligationStatus, number][])
