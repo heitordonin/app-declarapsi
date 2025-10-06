@@ -119,6 +119,21 @@ export function ClientesList() {
       cell: ({ row }) => <div className="font-mono text-sm">{row.getValue("cpf")}</div>,
     },
     {
+      accessorKey: "phone",
+      header: "Telefone",
+      cell: ({ row }) => {
+        const phone = row.getValue("phone") as string;
+        if (!phone) return <span className="text-muted-foreground">-</span>;
+        // Format +5511999999999 to (11) 99999-9999
+        const numbers = phone.replace(/\D/g, "").slice(2); // Remove +55
+        return (
+          <div className="font-mono text-sm">
+            ({numbers.slice(0, 2)}) {numbers.slice(2, 7)}-{numbers.slice(7)}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {

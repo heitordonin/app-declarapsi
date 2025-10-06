@@ -27,6 +27,7 @@ import { Client } from "@/types/database";
 const clientSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   cpf: z.string().min(14, "CPF inválido"),
+  phone: z.string().optional(),
   cep: z.string().optional(),
   state: z.string().optional(),
   city: z.string().optional(),
@@ -52,6 +53,7 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
     defaultValues: {
       name: client.name,
       cpf: client.cpf,
+      phone: client.phone ? client.phone.replace("+55", "") : "",
       cep: client.cep || "",
       state: client.state || "",
       city: client.city || "",
@@ -69,6 +71,7 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
         .update({
           name: data.name,
           cpf: data.cpf.replace(/\D/g, ""),
+          phone: data.phone ? `+55${data.phone.replace(/\D/g, "")}` : null,
           cep: data.cep,
           state: data.state,
           city: data.city,
@@ -138,13 +141,24 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
       .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   };
 
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 2) return `(${numbers}`;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
   const formatCep = (value: string) => {
     return value.replace(/\D/g, "").replace(/(\d{5})(\d)/, "$1-$2");
   };
 
   useEffect(() => {
-    // Format CPF on mount
+    // Format CPF and phone on mount
     form.setValue("cpf", formatCpf(client.cpf));
+    if (client.phone) {
+      const phoneNumbers = client.phone.replace("+55", "").replace(/\D/g, "");
+      form.setValue("phone", formatPhone(phoneNumbers));
+    }
     if (client.cep) {
       form.setValue("cep", formatCep(client.cep));
     }
@@ -190,6 +204,25 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
                         {...field}
                         maxLength={14}
                         onChange={(e) => field.onChange(formatCpf(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="(11) 99999-9999"
+                        maxLength={15}
+                        onChange={(e) => field.onChange(formatPhone(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />

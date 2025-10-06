@@ -38,6 +38,7 @@ export interface Client {
   name: string;
   email: string;
   cpf: string;
+  phone?: string;
   cep?: string;
   state?: string;
   city?: string;

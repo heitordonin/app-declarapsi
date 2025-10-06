@@ -113,6 +113,7 @@ export type Database = {
           neighborhood: string | null
           number: string | null
           org_id: string
+          phone: string | null
           state: string | null
           status: Database["public"]["Enums"]["client_status"]
           user_id: string | null
@@ -132,6 +133,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           org_id: string
+          phone?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           user_id?: string | null
@@ -151,6 +153,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           org_id?: string
+          phone?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           user_id?: string | null

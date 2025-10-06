@@ -29,6 +29,7 @@ const clientSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
   cpf: z.string().min(14, "CPF inválido"),
+  phone: z.string().optional(),
   cep: z.string().optional(),
   state: z.string().optional(),
   city: z.string().optional(),
@@ -52,6 +53,7 @@ export function AddClientDialog() {
       name: "",
       email: "",
       cpf: "",
+      phone: "",
       cep: "",
       state: "",
       city: "",
@@ -93,6 +95,7 @@ export function AddClientDialog() {
           name: data.name,
           email: data.email,
           cpf: data.cpf.replace(/\D/g, ""),
+          phone: data.phone ? `+55${data.phone.replace(/\D/g, "")}` : null,
           cep: data.cep,
           state: data.state,
           city: data.city,
@@ -173,6 +176,13 @@ export function AddClientDialog() {
       .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   };
 
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 2) return `(${numbers}`;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
   const formatCep = (value: string) => {
     return value.replace(/\D/g, "").replace(/(\d{5})(\d)/, "$1-$2");
   };
@@ -231,6 +241,25 @@ export function AddClientDialog() {
                         {...field}
                         maxLength={14}
                         onChange={(e) => field.onChange(formatCpf(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="(11) 99999-9999"
+                        maxLength={15}
+                        onChange={(e) => field.onChange(formatPhone(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
