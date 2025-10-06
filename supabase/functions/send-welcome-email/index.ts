@@ -87,7 +87,7 @@ serve(async (req) => {
       throw magicLinkError;
     }
 
-    console.log('Magic link generated');
+    console.log('Recovery link generated');
 
     // Criar HTML do email
     const html = `
@@ -108,7 +108,7 @@ serve(async (req) => {
               Para acessar sua área do cliente e definir sua senha, clique no link abaixo:
             </p>
             <a href="${magicLinkData.properties.action_link}" style="display: inline-block; background-color: #5469d4; color: white; text-decoration: none; padding: 14px 30px; border-radius: 5px; margin: 20px 0;">
-              Configurar Minha Senha
+              Definir Minha Senha
             </a>
             <p style="color: #666; font-size: 14px;">
               Este link é válido por 24 horas e pode ser usado apenas uma vez.

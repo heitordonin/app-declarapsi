@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import ContadorLayout from "./pages/contador/ContadorLayout";
 import Obrigacoes from "./pages/contador/Obrigacoes";
 import Relatorios from "./pages/contador/Relatorios";
@@ -57,6 +58,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             
             {/* Contador Routes */}
             <Route path="/contador" element={
