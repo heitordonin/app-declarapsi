@@ -170,11 +170,11 @@ function generateCompetences(
   const competences: string[] = [];
   const today = new Date();
   
-  // Começar a partir do mês atual ou mês de criação do vínculo
-  let currentDate = new Date(Math.max(startDate.getTime(), today.getTime()));
+  // Começar a partir do obligations_start_date (ou created_at do vínculo)
+  let currentDate = new Date(startDate);
   currentDate.setDate(1); // Primeiro dia do mês
   
-  const endDate = new Date(currentDate);
+  const endDate = new Date(today);
   endDate.setMonth(endDate.getMonth() + monthsAhead);
 
   while (currentDate <= endDate) {
