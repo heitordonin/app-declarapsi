@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarHeader,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import logo from '@/assets/logo-declara-psi.png';
 
@@ -28,11 +29,17 @@ const navItems = [
 export function ContadorSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
-        <img src={logo} alt="Declara Psi" className="w-full h-auto" />
+        <img 
+          src={logo} 
+          alt="Declara Psi" 
+          className={`h-auto transition-all duration-200 ${isCollapsed ? 'w-full' : 'w-4/5 mx-auto'}`}
+        />
       </SidebarHeader>
       
       <SidebarContent>
