@@ -52,20 +52,28 @@ export function ObrigacoesCalendar({
           DayContent: ({ date }) => {
             const dateStr = date.toISOString().split('T')[0];
             const statusCounts = getStatusCounts(dateStr);
+            const visibleBadges = statusCounts?.slice(0, 4) || [];
+            const remainingCount = statusCounts && statusCounts.length > 4 ? statusCounts.length - 4 : 0;
+            
             return (
-              <div className="relative w-full h-full flex flex-col items-start justify-start p-1">
-                <span className="text-sm font-semibold mb-1">{date.getDate()}</span>
-                {statusCounts && (
-                  <div className="flex gap-1 flex-wrap">
-                    {statusCounts.map(({ status, count }) => (
+              <div className="relative w-full h-full flex flex-col items-center justify-start p-1.5 overflow-hidden">
+                <span className="text-sm font-bold mb-0.5">{date.getDate()}</span>
+                {visibleBadges.length > 0 && (
+                  <div className="grid grid-cols-2 gap-1">
+                    {visibleBadges.map(({ status, count }) => (
                       <div
                         key={status}
                         style={{ backgroundColor: STATUS_CONFIG[status].chart }}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs text-white font-bold shadow-sm"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-sm"
                       >
                         {count}
                       </div>
                     ))}
+                    {remainingCount > 0 && (
+                      <div className="w-6 h-6 rounded-full bg-gray-500 flex items-center justify-center text-[9px] text-white font-bold shadow-sm">
+                        +{remainingCount}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
