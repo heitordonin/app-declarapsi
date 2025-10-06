@@ -11,3 +11,69 @@ export const getFrequencyLabel = (freq: FrequencyType) =>
 
 export const getFrequencyColor = (freq: FrequencyType) => 
   FREQUENCY_CONFIG[freq].color;
+
+/**
+ * Gera array de competências (MM/YYYY) baseado na frequência
+ */
+export function generateCompetences(
+  startDate: Date,
+  frequency: FrequencyType,
+  monthsAhead: number
+): string[] {
+  const competences: string[] = [];
+  const today = new Date();
+  
+  // Começar a partir do mês atual ou mês de criação do vínculo
+  let currentDate = new Date(Math.max(startDate.getTime(), today.getTime()));
+  currentDate.setDate(1); // Primeiro dia do mês
+  
+  const endDate = new Date(currentDate);
+  endDate.setMonth(endDate.getMonth() + monthsAhead);
+
+  while (currentDate <= endDate) {
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const year = currentDate.getFullYear();
+    
+    if (frequency === 'monthly') {
+      competences.push(`${month}/${year}`);
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    } else if (frequency === 'annual') {
+      // Gerar apenas para o mesmo mês a cada ano
+      if (currentDate.getMonth() === startDate.getMonth()) {
+        competences.push(`${month}/${year}`);
+      }
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    } else if (frequency === 'weekly') {
+      // Para semanal, geramos mensalmente (pode ajustar depois)
+      competences.push(`${month}/${year}`);
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+  }
+
+  return competences;
+}
+
+/**
+ * Calcula data de vencimento baseada na competência e regra legal
+ */
+export function calculateDueDate(competence: string, legalDueRule: number | null): Date {
+  const [month, year] = competence.split('/').map(Number);
+  
+  if (!legalDueRule) {
+    // Se não tem regra, vence no último dia do mês seguinte
+    return new Date(year, month, 0); // Último dia do mês seguinte
+  }
+
+  // Vencimento é no dia especificado do mês seguinte
+  return new Date(year, month, legalDueRule);
+}
+
+/**
+ * Calcula data da meta interna baseada na competência e dia alvo
+ */
+export function calculateInternalTargetDate(competence: string, targetDay: number): Date {
+  const [month, year] = competence.split('/').map(Number);
+  
+  // Meta interna é no dia especificado do mês da competência
+  return new Date(year, month - 1, targetDay);
+}
