@@ -5,16 +5,28 @@ import { Plus } from "lucide-react";
 import { ObrigacoesList } from "@/components/obrigacoes/ObrigacoesList";
 import { AddObrigacaoDialog } from "@/components/obrigacoes/AddObrigacaoDialog";
 import { EditObrigacaoDialog } from "@/components/obrigacoes/EditObrigacaoDialog";
-import { Obligation } from "@/types/database";
+import { VinculosList } from "@/components/vinculos/VinculosList";
+import { AddVinculoDialog } from "@/components/vinculos/AddVinculoDialog";
+import { EditVinculoDialog } from "@/components/vinculos/EditVinculoDialog";
+import { Obligation, ClientObligation } from "@/types/database";
 
 export default function Configuracoes() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedObrigacao, setSelectedObrigacao] = useState<Obligation | null>(null);
+  
+  const [addVinculoDialogOpen, setAddVinculoDialogOpen] = useState(false);
+  const [editVinculoDialogOpen, setEditVinculoDialogOpen] = useState(false);
+  const [selectedVinculo, setSelectedVinculo] = useState<(ClientObligation & { client: any; obligation: any }) | null>(null);
 
   const handleEdit = (obrigacao: Obligation) => {
     setSelectedObrigacao(obrigacao);
     setEditDialogOpen(true);
+  };
+
+  const handleEditVinculo = (vinculo: ClientObligation & { client: any; obligation: any }) => {
+    setSelectedVinculo(vinculo);
+    setEditVinculoDialogOpen(true);
   };
 
   return (
@@ -47,10 +59,21 @@ export default function Configuracoes() {
           <ObrigacoesList onEdit={handleEdit} />
         </TabsContent>
 
-        <TabsContent value="vinculos">
-          <div className="text-center py-12 text-muted-foreground">
-            Funcionalidade de vínculos em desenvolvimento
+        <TabsContent value="vinculos" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">Vínculos Cliente-Obrigação</h2>
+              <p className="text-sm text-muted-foreground">
+                Gerencie quais obrigações estão associadas a cada cliente
+              </p>
+            </div>
+            <Button onClick={() => setAddVinculoDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Vínculo
+            </Button>
           </div>
+
+          <VinculosList onEdit={handleEditVinculo} />
         </TabsContent>
       </Tabs>
 
@@ -59,6 +82,13 @@ export default function Configuracoes() {
         open={editDialogOpen} 
         onOpenChange={setEditDialogOpen}
         obrigacao={selectedObrigacao}
+      />
+      
+      <AddVinculoDialog open={addVinculoDialogOpen} onOpenChange={setAddVinculoDialogOpen} />
+      <EditVinculoDialog 
+        open={editVinculoDialogOpen} 
+        onOpenChange={setEditVinculoDialogOpen}
+        vinculo={selectedVinculo}
       />
     </div>
   );
