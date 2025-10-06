@@ -214,7 +214,7 @@ function calculateDueDate(competence: string, legalDueRule: number | null): stri
 function calculateInternalTargetDate(competence: string, targetDay: number): string {
   const [month, year] = competence.split('/').map(Number);
   
-  // Meta interna é no dia especificado do mês da competência
-  const targetDate = new Date(year, month - 1, targetDay);
+  // Meta interna é no dia especificado do mês seguinte ao da competência
+  const targetDate = new Date(year, month, targetDay);
   return targetDate.toISOString().split('T')[0];
 }

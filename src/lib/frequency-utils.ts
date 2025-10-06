@@ -74,6 +74,6 @@ export function calculateDueDate(competence: string, legalDueRule: number | null
 export function calculateInternalTargetDate(competence: string, targetDay: number): Date {
   const [month, year] = competence.split('/').map(Number);
   
-  // Meta interna é no dia especificado do mês da competência
-  return new Date(year, month - 1, targetDay);
+  // Meta interna é no dia especificado do mês seguinte ao da competência
+  return new Date(year, month, targetDay);
 }
