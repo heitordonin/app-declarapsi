@@ -53,15 +53,15 @@ export function ObrigacoesCalendar({
             const dateStr = date.toISOString().split('T')[0];
             const statusCounts = getStatusCounts(dateStr);
             return (
-              <div className="relative w-full h-full flex flex-col items-center justify-center gap-0.5 py-1">
-                <span className="text-sm">{date.getDate()}</span>
+              <div className="relative w-full h-full flex flex-col items-start justify-start p-1">
+                <span className="text-sm font-semibold mb-1">{date.getDate()}</span>
                 {statusCounts && (
-                  <div className="flex gap-0.5 flex-wrap justify-center">
-                    {statusCounts.slice(0, 3).map(({ status, count }) => (
+                  <div className="flex gap-1 flex-wrap">
+                    {statusCounts.map(({ status, count }) => (
                       <div
                         key={status}
                         style={{ backgroundColor: STATUS_CONFIG[status].chart }}
-                        className="w-4 h-4 rounded-sm flex items-center justify-center text-[8px] text-white font-bold"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs text-white font-bold shadow-sm"
                       >
                         {count}
                       </div>
@@ -73,23 +73,23 @@ export function ObrigacoesCalendar({
           },
         }}
       />
-      <div className="mt-4 space-y-2">
-        <p className="text-sm font-medium">Legenda:</p>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center gap-1.5">
-            <div style={{ backgroundColor: STATUS_CONFIG.overdue.chart }} className="h-3 w-3 rounded-full" />
+      <div className="mt-6 space-y-3">
+        <p className="text-sm font-semibold">Legenda:</p>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <div style={{ backgroundColor: STATUS_CONFIG.overdue.chart }} className="h-5 w-5 rounded-full shadow-sm" />
             <span>Vencida</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div style={{ backgroundColor: STATUS_CONFIG.due_48h.chart }} className="h-3 w-3 rounded-full" />
+          <div className="flex items-center gap-2">
+            <div style={{ backgroundColor: STATUS_CONFIG.due_48h.chart }} className="h-5 w-5 rounded-full shadow-sm" />
             <span>Vence em 48h</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div style={{ backgroundColor: STATUS_CONFIG.pending.chart }} className="h-3 w-3 rounded-full" />
+          <div className="flex items-center gap-2">
+            <div style={{ backgroundColor: STATUS_CONFIG.pending.chart }} className="h-5 w-5 rounded-full shadow-sm" />
             <span>No prazo</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div style={{ backgroundColor: STATUS_CONFIG.on_time_done.chart }} className="h-3 w-3 rounded-full" />
+          <div className="flex items-center gap-2">
+            <div style={{ backgroundColor: STATUS_CONFIG.on_time_done.chart }} className="h-5 w-5 rounded-full shadow-sm" />
             <span>Concluída</span>
           </div>
         </div>
