@@ -27,7 +27,7 @@ export default function Configuracoes() {
       <Tabs defaultValue="obrigacoes" className="w-full">
         <TabsList>
           <TabsTrigger value="obrigacoes">Obrigações</TabsTrigger>
-          <TabsTrigger value="vinculos" disabled>Vínculos</TabsTrigger>
+          <TabsTrigger value="vinculos">Vínculos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="obrigacoes" className="space-y-4">
