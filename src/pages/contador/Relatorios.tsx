@@ -12,10 +12,17 @@ export default function Relatorios() {
   const { data: generalStats, isLoading: loadingGeneral } = useQuery({
     queryKey: ['general-stats', selectedMonth],
     queryFn: async () => {
+      // Converter formato YYYY-MM para MM/YYYY
+      const [year, month] = selectedMonth.split('-');
+      const competencePattern = `${month}/${year}`;
+
       const { data, error } = await supabase
         .from('obligation_instances')
-        .select('status')
-        .like('competence', `${selectedMonth}%`);
+        .select(`
+          status,
+          client:clients!inner(org_id)
+        `)
+        .eq('competence', competencePattern);
 
       if (error) throw error;
 
@@ -36,13 +43,18 @@ export default function Relatorios() {
   const { data: obligationStats, isLoading: loadingObligations } = useQuery({
     queryKey: ['obligation-stats', selectedMonth],
     queryFn: async () => {
+      // Converter formato YYYY-MM para MM/YYYY
+      const [year, month] = selectedMonth.split('-');
+      const competencePattern = `${month}/${year}`;
+
       const { data, error } = await supabase
         .from('obligation_instances')
         .select(`
           status,
-          obligation:obligations(id, name)
+          obligation:obligations(id, name),
+          client:clients!inner(org_id)
         `)
-        .like('competence', `${selectedMonth}%`);
+        .eq('competence', competencePattern);
 
       if (error) throw error;
 
