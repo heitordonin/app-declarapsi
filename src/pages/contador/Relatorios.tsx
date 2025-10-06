@@ -4,7 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { MonthSelector } from '@/components/relatorios/MonthSelector';
 import { ObrigacaoDonutChart } from '@/components/relatorios/ObrigacaoDonutChart';
 import { KPICard } from '@/components/relatorios/KPICard';
-import { format } from 'date-fns';
+import { StatusEvolutionChart } from '@/components/relatorios/StatusEvolutionChart';
+import { ClientComparisonChart } from '@/components/relatorios/ClientComparisonChart';
+import { InstancesTable } from '@/components/relatorios/InstancesTable';
+import { format, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Clock, AlertCircle, TrendingUp } from 'lucide-react';
 
 export default function Relatorios() {
@@ -38,6 +42,117 @@ export default function Relatorios() {
         status,
         count: count as number,
       }));
+    },
+  });
+
+  // Evolução temporal (últimos 6 meses)
+  const { data: evolutionData } = useQuery({
+    queryKey: ['evolution-stats'],
+    queryFn: async () => {
+      const months = Array.from({ length: 6 }, (_, i) => {
+        const date = subMonths(new Date(), 5 - i);
+        return {
+          value: format(date, 'yyyy-MM'),
+          label: format(date, 'MM/yyyy'),
+          display: format(date, "MMM/yy", { locale: ptBR }),
+        };
+      });
+
+      const results = await Promise.all(
+        months.map(async (month) => {
+          const { data, error } = await supabase
+            .from('obligation_instances')
+            .select(`
+              status,
+              client:clients!inner(org_id)
+            `)
+            .eq('competence', month.label);
+
+          if (error) throw error;
+
+          const grouped = data.reduce((acc: Record<string, number>, item) => {
+            acc[item.status] = (acc[item.status] || 0) + 1;
+            return acc;
+          }, {});
+
+          return {
+            month: month.display,
+            ...grouped,
+          };
+        })
+      );
+
+      return results;
+    },
+  });
+
+  // Comparação por cliente
+  const { data: clientComparison } = useQuery({
+    queryKey: ['client-comparison', selectedMonth],
+    queryFn: async () => {
+      const [year, month] = selectedMonth.split('-');
+      const competencePattern = `${month}/${year}`;
+
+      const { data, error } = await supabase
+        .from('obligation_instances')
+        .select(`
+          status,
+          client:clients!inner(id, name, org_id)
+        `)
+        .eq('competence', competencePattern);
+
+      if (error) throw error;
+
+      const grouped = data.reduce((acc: Record<string, any>, item) => {
+        const clientId = item.client.id;
+        const clientName = item.client.name;
+
+        if (!acc[clientId]) {
+          acc[clientId] = {
+            clientName,
+            completed: 0,
+            pending: 0,
+            overdue: 0,
+          };
+        }
+
+        if (item.status === 'on_time_done' || item.status === 'late_done') {
+          acc[clientId].completed++;
+        } else if (item.status === 'pending' || item.status === 'due_48h') {
+          acc[clientId].pending++;
+        } else if (item.status === 'overdue') {
+          acc[clientId].overdue++;
+        }
+
+        return acc;
+      }, {});
+
+      return Object.values(grouped);
+    },
+  });
+
+  // Instâncias detalhadas
+  const { data: instances } = useQuery({
+    queryKey: ['instances-detail', selectedMonth],
+    queryFn: async () => {
+      const [year, month] = selectedMonth.split('-');
+      const competencePattern = `${month}/${year}`;
+
+      const { data, error } = await supabase
+        .from('obligation_instances')
+        .select(`
+          id,
+          competence,
+          due_at,
+          status,
+          client:clients!inner(name, org_id),
+          obligation:obligations(name)
+        `)
+        .eq('competence', competencePattern)
+        .order('due_at', { ascending: true });
+
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -166,6 +281,12 @@ export default function Relatorios() {
         data={generalStats || []}
       />
 
+      {/* Gráfico de Evolução Temporal */}
+      <StatusEvolutionChart data={evolutionData || []} />
+
+      {/* Gráfico de Comparação entre Clientes */}
+      <ClientComparisonChart data={(clientComparison as any) || []} />
+
       {/* Gráficos por Obrigação */}
       {obligationStats && obligationStats.length > 0 && (
         <div>
@@ -181,6 +302,9 @@ export default function Relatorios() {
           </div>
         </div>
       )}
+
+      {/* Tabela Detalhada de Instâncias */}
+      <InstancesTable data={(instances as any) || []} />
 
       {(!obligationStats || obligationStats.length === 0) && (
         <div className="text-center py-8 text-muted-foreground">
