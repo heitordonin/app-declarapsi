@@ -191,6 +191,12 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       queryClient.invalidateQueries({ queryKey: ['obligation-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['general-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['evolution-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['client-comparison'] });
+      queryClient.invalidateQueries({ queryKey: ['instances-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['obligation-stats'] });
       toast.success('Documento classificado e obrigação concluída automaticamente!');
       onOpenChange(false);
       form.reset();
