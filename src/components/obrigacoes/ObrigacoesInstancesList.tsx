@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ObrigacaoInstanceCard } from './ObrigacaoInstanceCard';
+import { ObrigacaoGroupedCard } from './ObrigacaoGroupedCard';
+import { ObrigacaoClientsDialog } from './ObrigacaoClientsDialog';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
@@ -14,6 +15,21 @@ interface ObrigacoesInstancesListProps {
 
 export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesListProps) {
   const [showCompleted, setShowCompleted] = useState(true);
+  
+  // Estado para o dialog
+  const [selectedObligation, setSelectedObligation] = useState<{
+    obligation_name: string;
+    obligation_id: string;
+    competence: string;
+    due_at: string;
+    clients: Array<{
+      instance_id: string;
+      client_id: string;
+      client_name: string;
+      status: ObligationStatus;
+      completed_at: string | null;
+    }>;
+  } | null>(null);
 
   const { data: instances, isLoading, error } = useQuery({
     queryKey: ['obligation-instances', selectedDate?.toISOString()],
@@ -62,90 +78,145 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
     );
   }
 
-  // Filtrar instâncias baseado no toggle
-  const filteredInstances = showCompleted 
-    ? instances 
-    : instances.filter(inst => inst.status !== 'on_time_done' && inst.status !== 'late_done');
+  // Agrupar por data e obrigação usando useMemo
+  const groupedData = useMemo(() => {
+    if (!instances) return {};
 
-  // Agrupar por data
-  const groupedByDate: Record<string, typeof instances> = {};
-  filteredInstances.forEach(instance => {
-    const dateKey = instance.due_at;
-    if (!groupedByDate[dateKey]) {
-      groupedByDate[dateKey] = [];
-    }
-    groupedByDate[dateKey].push(instance);
-  });
+    // Filtrar instâncias baseado no toggle
+    const filteredInstances = showCompleted 
+      ? instances 
+      : instances.filter(inst => inst.status !== 'on_time_done' && inst.status !== 'late_done');
+
+    // Estrutura: { "2026-02-15": { "obligation-id": { obligation_name, competence, total, completed, clients: [] } } }
+    type GroupedStructure = Record<string, Record<string, {
+      obligation_name: string;
+      obligation_id: string;
+      competence: string;
+      due_at: string;
+      total: number;
+      completed: number;
+      overdue_count: number;
+      clients: Array<{
+        instance_id: string;
+        client_id: string;
+        client_name: string;
+        status: ObligationStatus;
+        completed_at: string | null;
+      }>;
+    }>>;
+
+    const grouped: GroupedStructure = {};
+
+    filteredInstances.forEach(instance => {
+      const dateKey = instance.due_at;
+      const obligationId = instance.obligation_id;
+
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = {};
+      }
+
+      if (!grouped[dateKey][obligationId]) {
+        grouped[dateKey][obligationId] = {
+          obligation_name: instance.obligation.name,
+          obligation_id: obligationId,
+          competence: instance.competence,
+          due_at: instance.due_at,
+          total: 0,
+          completed: 0,
+          overdue_count: 0,
+          clients: [],
+        };
+      }
+
+      const group = grouped[dateKey][obligationId];
+      group.total++;
+      
+      if (instance.status === 'on_time_done' || instance.status === 'late_done') {
+        group.completed++;
+      }
+
+      if (instance.status === 'overdue') {
+        group.overdue_count++;
+      }
+
+      group.clients.push({
+        instance_id: instance.id,
+        client_id: instance.client_id,
+        client_name: instance.client.name,
+        status: instance.status as ObligationStatus,
+        completed_at: instance.completed_at,
+      });
+    });
+
+    return grouped;
+  }, [instances, showCompleted]);
 
   // Ordenar datas
-  const sortedDates = Object.keys(groupedByDate).sort();
-
-  // Prioridade de status para ordenação
-  const statusPriority: Record<ObligationStatus, number> = {
-    overdue: 1,
-    due_48h: 2,
-    pending: 3,
-    late_done: 4,
-    on_time_done: 5,
-  };
+  const sortedDates = Object.keys(groupedData).sort();
 
   return (
-    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-6">
-      <div className="flex items-center gap-2 sticky top-0 bg-background pb-4 z-10">
-        <Switch
-          id="show-completed"
-          checked={showCompleted}
-          onCheckedChange={setShowCompleted}
-        />
-        <Label htmlFor="show-completed" className="text-sm cursor-pointer">
-          Exibir concluídas
-        </Label>
+    <>
+      <div className="max-h-[600px] overflow-y-auto pr-2 space-y-6">
+        <div className="flex items-center gap-2 sticky top-0 bg-background pb-4 z-10">
+          <Switch
+            id="show-completed"
+            checked={showCompleted}
+            onCheckedChange={setShowCompleted}
+          />
+          <Label htmlFor="show-completed" className="text-sm cursor-pointer">
+            Exibir concluídas
+          </Label>
+        </div>
+
+        {sortedDates.map(dateKey => {
+          const obligationsForDate = groupedData[dateKey];
+          const obligationsList = Object.values(obligationsForDate);
+
+          // Calcular totais para o header da data
+          const totalCompleted = obligationsList.reduce((sum, obl) => sum + obl.completed, 0);
+          const totalInstances = obligationsList.reduce((sum, obl) => sum + obl.total, 0);
+
+          return (
+            <div key={dateKey} className="space-y-3 min-w-0">
+              <div className="flex items-baseline justify-between border-b pb-2 gap-2">
+                <h3 className="text-lg font-semibold uppercase">
+                  {format(new Date(dateKey), "EEE, dd/MM/yyyy", { locale: ptBR })}
+                </h3>
+                <span className="text-sm text-muted-foreground">
+                  {totalCompleted}/{totalInstances} concluídas
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {obligationsList.map((obligation) => (
+                  <ObrigacaoGroupedCard
+                    key={obligation.obligation_id}
+                    obligation_name={obligation.obligation_name}
+                    obligation_id={obligation.obligation_id}
+                    competence={obligation.competence}
+                    due_at={obligation.due_at}
+                    total={obligation.total}
+                    completed={obligation.completed}
+                    overdue_count={obligation.overdue_count}
+                    onClick={() => setSelectedObligation(obligation)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {sortedDates.map(dateKey => {
-        const dateInstances = groupedByDate[dateKey];
-        
-        // Separar pendentes e concluídas
-        const pending = dateInstances.filter(inst => 
-          inst.status === 'overdue' || inst.status === 'due_48h' || inst.status === 'pending'
-        ).sort((a, b) => statusPriority[a.status as ObligationStatus] - statusPriority[b.status as ObligationStatus]);
-        
-        const completed = dateInstances.filter(inst => 
-          inst.status === 'on_time_done' || inst.status === 'late_done'
-        );
-
-        const totalCount = dateInstances.length;
-        const completedCount = completed.length;
-
-        return (
-          <div key={dateKey} className="space-y-3 min-w-0">
-            <div className="flex items-baseline justify-between border-b pb-2 gap-2">
-              <h3 className="text-lg font-semibold uppercase">
-                {format(new Date(dateKey), "EEE, dd/MM/yyyy", { locale: ptBR })}
-              </h3>
-              <span className="text-sm text-muted-foreground">
-                {completedCount}/{totalCount}
-              </span>
-            </div>
-            
-            {pending.length > 0 && (
-              <div className="space-y-2">
-                {pending.map((instance) => (
-                  <ObrigacaoInstanceCard key={instance.id} instance={instance} />
-                ))}
-              </div>
-            )}
-            
-            {completed.length > 0 && showCompleted && (
-              <div className="space-y-2">
-                {completed.map((instance) => (
-                  <ObrigacaoInstanceCard key={instance.id} instance={instance} />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+      {selectedObligation && (
+        <ObrigacaoClientsDialog
+          open={!!selectedObligation}
+          onOpenChange={(open) => !open && setSelectedObligation(null)}
+          obligation_name={selectedObligation.obligation_name}
+          competence={selectedObligation.competence}
+          due_at={selectedObligation.due_at}
+          clients={selectedObligation.clients}
+        />
+      )}
+    </>
   );
 }
