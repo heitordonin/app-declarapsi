@@ -10,7 +10,7 @@ interface ObrigacaoGroupedCardProps {
   obligation_name: string;
   obligation_id: string;
   competence: string;
-  due_at: string;
+  internal_target_at: string;
   total: number;
   completed: number;
   overdue_count: number;
@@ -20,7 +20,7 @@ interface ObrigacaoGroupedCardProps {
 export function ObrigacaoGroupedCard({
   obligation_name,
   competence,
-  due_at,
+  internal_target_at,
   total,
   completed,
   overdue_count,
@@ -49,7 +49,7 @@ export function ObrigacaoGroupedCard({
                 {competence}
               </Badge>
               <Badge variant="secondary" className="text-xs">
-                Venc: {format(new Date(due_at), 'dd/MM/yyyy', { locale: ptBR })}
+                Prazo: {format(new Date(internal_target_at), 'dd/MM/yyyy', { locale: ptBR })}
               </Badge>
             </div>
           </div>

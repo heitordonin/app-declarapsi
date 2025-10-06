@@ -19,7 +19,7 @@ export default function Obrigacoes() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('obligation_instances')
-        .select('due_at, status');
+        .select('internal_target_at, status');
 
       if (error) throw error;
       return data;
@@ -28,7 +28,7 @@ export default function Obrigacoes() {
 
   const instancesByDate: Record<string, ObligationStatus[]> = {};
   allInstances?.forEach((instance) => {
-    const dateStr = instance.due_at;
+    const dateStr = instance.internal_target_at;
     if (!instancesByDate[dateStr]) {
       instancesByDate[dateStr] = [];
     }

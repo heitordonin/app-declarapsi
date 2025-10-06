@@ -21,7 +21,10 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
     obligation_name: string;
     obligation_id: string;
     competence: string;
-    due_at: string;
+    internal_target_at: string;
+    total: number;
+    completed: number;
+    overdue_count: number;
     clients: Array<{
       instance_id: string;
       client_id: string;
@@ -32,25 +35,23 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
   } | null>(null);
 
   const { data: instances, isLoading, error } = useQuery({
-    queryKey: ['obligation-instances', selectedDate?.toISOString()],
-    retry: false,
+    queryKey: ['obligation-instances', selectedDate],
     queryFn: async () => {
       let query = supabase
         .from('obligation_instances')
         .select(`
-          *,
-          obligation:obligations(name),
-          client:clients(name)
-        `)
-        .order('due_at', { ascending: true });
+        *,
+        obligation:obligations(name),
+        client:clients(name)
+      `)
+        .order('internal_target_at', { ascending: true });
 
       if (selectedDate) {
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        query = query.eq('due_at', dateStr);
+        query = query.eq('internal_target_at', dateStr);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
       return data;
     },
@@ -63,59 +64,55 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
     // Filtrar instâncias baseado no toggle
     const filteredInstances = showCompleted 
       ? instances 
-      : instances.filter(inst => inst.status !== 'on_time_done' && inst.status !== 'late_done');
+      : instances.filter(inst => 
+          inst.status !== 'on_time_done' && inst.status !== 'late_done'
+        );
 
-    // Estrutura: { "2026-02-15": { "obligation-id": { obligation_name, competence, total, completed, clients: [] } } }
-    type GroupedStructure = Record<string, Record<string, {
-      obligation_name: string;
-      obligation_id: string;
-      competence: string;
-      due_at: string;
-      total: number;
-      completed: number;
-      overdue_count: number;
-      clients: Array<{
-        instance_id: string;
-        client_id: string;
-        client_name: string;
-        status: ObligationStatus;
-        completed_at: string | null;
-      }>;
-    }>>;
+    interface GroupedStructure {
+      [date: string]: {
+        [obligationId: string]: {
+          obligation_name: string;
+          obligation_id: string;
+          competence: string;
+          internal_target_at: string;
+          clients: Array<{
+            instance_id: string;
+            client_id: string;
+            client_name: string;
+            status: ObligationStatus;
+            completed_at: string | null;
+          }>;
+          total: number;
+          completed: number;
+          overdue_count: number;
+        };
+      };
+    }
 
     const grouped: GroupedStructure = {};
 
-    filteredInstances.forEach(instance => {
-      const dateKey = instance.due_at;
-      const obligationId = instance.obligation_id;
+    filteredInstances.forEach((instance) => {
+      const dateKey = instance.internal_target_at;
+      const obligationKey = `${instance.obligation_id}-${instance.competence}`;
 
       if (!grouped[dateKey]) {
         grouped[dateKey] = {};
       }
 
-      if (!grouped[dateKey][obligationId]) {
-        grouped[dateKey][obligationId] = {
+      if (!grouped[dateKey][obligationKey]) {
+        grouped[dateKey][obligationKey] = {
           obligation_name: instance.obligation.name,
-          obligation_id: obligationId,
+          obligation_id: instance.obligation_id,
           competence: instance.competence,
-          due_at: instance.due_at,
+          internal_target_at: instance.internal_target_at,
+          clients: [],
           total: 0,
           completed: 0,
           overdue_count: 0,
-          clients: [],
         };
       }
 
-      const group = grouped[dateKey][obligationId];
-      group.total++;
-      
-      if (instance.status === 'on_time_done' || instance.status === 'late_done') {
-        group.completed++;
-      }
-
-      if (instance.status === 'overdue') {
-        group.overdue_count++;
-      }
+      const group = grouped[dateKey][obligationKey];
 
       group.clients.push({
         instance_id: instance.id,
@@ -124,6 +121,16 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
         status: instance.status as ObligationStatus,
         completed_at: instance.completed_at,
       });
+
+      group.total++;
+
+      if (instance.status === 'on_time_done' || instance.status === 'late_done') {
+        group.completed++;
+      }
+
+      if (instance.status === 'overdue') {
+        group.overdue_count++;
+      }
     });
 
     return grouped;
@@ -168,7 +175,7 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
           </Label>
         </div>
 
-        {sortedDates.map(dateKey => {
+        {sortedDates.map((dateKey) => {
           const obligationsForDate = groupedData[dateKey];
           const obligationsList = Object.values(obligationsForDate);
 
@@ -194,7 +201,7 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
                     obligation_name={obligation.obligation_name}
                     obligation_id={obligation.obligation_id}
                     competence={obligation.competence}
-                    due_at={obligation.due_at}
+                    internal_target_at={obligation.internal_target_at}
                     total={obligation.total}
                     completed={obligation.completed}
                     overdue_count={obligation.overdue_count}
@@ -213,7 +220,7 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
           onOpenChange={(open) => !open && setSelectedObligation(null)}
           obligation_name={selectedObligation.obligation_name}
           competence={selectedObligation.competence}
-          due_at={selectedObligation.due_at}
+          internal_target_at={selectedObligation.internal_target_at}
           clients={selectedObligation.clients}
         />
       )}

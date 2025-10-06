@@ -29,7 +29,7 @@ interface ObrigacaoClientsDialogProps {
   onOpenChange: (open: boolean) => void;
   obligation_name: string;
   competence: string;
-  due_at: string;
+  internal_target_at: string;
   clients: ClientInstance[];
 }
 
@@ -38,7 +38,7 @@ export function ObrigacaoClientsDialog({
   onOpenChange,
   obligation_name,
   competence,
-  due_at,
+  internal_target_at,
   clients,
 }: ObrigacaoClientsDialogProps) {
   const queryClient = useQueryClient();
@@ -47,7 +47,7 @@ export function ObrigacaoClientsDialog({
   const completeMutation = useMutation({
     mutationFn: async (instanceId: string) => {
       const now = new Date();
-      const dueDate = new Date(due_at);
+      const dueDate = new Date(internal_target_at);
       const isLate = now > dueDate;
       const newStatus = isLate ? 'late_done' : 'on_time_done';
 
@@ -103,7 +103,7 @@ export function ObrigacaoClientsDialog({
               {competence}
             </Badge>
             <Badge variant="secondary" className="text-sm">
-              Vencimento: {format(new Date(due_at), 'dd/MM/yyyy', { locale: ptBR })}
+              Prazo Interno: {format(new Date(internal_target_at), 'dd/MM/yyyy', { locale: ptBR })}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground pt-2">
