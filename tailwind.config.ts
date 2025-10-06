@@ -47,6 +47,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        status: {
+          pending: "hsl(var(--status-pending))",
+          "pending-foreground": "hsl(var(--status-pending-foreground))",
+          "due-soon": "hsl(var(--status-due-soon))",
+          "due-soon-foreground": "hsl(var(--status-due-soon-foreground))",
+          success: "hsl(var(--status-success))",
+          "success-foreground": "hsl(var(--status-success-foreground))",
+          overdue: "hsl(var(--status-overdue))",
+          "overdue-foreground": "hsl(var(--status-overdue-foreground))",
+          late: "hsl(var(--status-late))",
+          "late-foreground": "hsl(var(--status-late-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
