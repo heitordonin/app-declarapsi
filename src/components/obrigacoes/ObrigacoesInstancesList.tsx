@@ -56,31 +56,9 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
     },
   });
 
-  if (isLoading) {
-    return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8 text-destructive">
-        Erro ao carregar obrigações. Tente novamente.
-      </div>
-    );
-  }
-
-  if (!instances || instances.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        {selectedDate
-          ? 'Nenhuma obrigação encontrada para esta data.'
-          : 'Nenhuma obrigação cadastrada.'}
-      </div>
-    );
-  }
-
-  // Agrupar por data e obrigação usando useMemo
+  // Agrupar por data e obrigação usando useMemo (ANTES dos returns condicionais)
   const groupedData = useMemo(() => {
-    if (!instances) return {};
+    if (!instances || instances.length === 0) return {};
 
     // Filtrar instâncias baseado no toggle
     const filteredInstances = showCompleted 
@@ -153,6 +131,28 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
 
   // Ordenar datas
   const sortedDates = Object.keys(groupedData).sort();
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-destructive">
+        Erro ao carregar obrigações. Tente novamente.
+      </div>
+    );
+  }
+
+  if (sortedDates.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        {selectedDate
+          ? 'Nenhuma obrigação encontrada para esta data.'
+          : 'Nenhuma obrigação cadastrada.'}
+      </div>
+    );
+  }
 
   return (
     <>
