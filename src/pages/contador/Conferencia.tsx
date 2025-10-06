@@ -1,15 +1,29 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UploadZone } from '@/components/conferencia/UploadZone';
 import { StagingTable } from '@/components/conferencia/StagingTable';
 import { ClassificationDialog } from '@/components/conferencia/ClassificationDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 export default function Conferencia() {
   const [classifyingUpload, setClassifyingUpload] = useState<any>(null);
   const queryClient = useQueryClient();
+
+  const { data: pendingCount } = useQuery({
+    queryKey: ['staging-uploads-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('staging_uploads')
+        .select('*', { count: 'exact', head: true })
+        .eq('state', 'pending');
+      
+      if (error) throw error;
+      return count || 0;
+    }
+  });
 
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
@@ -53,6 +67,7 @@ export default function Conferencia() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
+      queryClient.invalidateQueries({ queryKey: ['staging-uploads-count'] });
       toast.success('Arquivos enviados com sucesso!');
     },
     onError: (error) => {
@@ -77,7 +92,17 @@ export default function Conferencia() {
       <Tabs defaultValue="upload" className="space-y-6">
         <TabsList>
           <TabsTrigger value="upload">Upload</TabsTrigger>
-          <TabsTrigger value="staging">Classificar Documentos</TabsTrigger>
+          <TabsTrigger value="staging" className="relative">
+            Classificar Documentos
+            {pendingCount && pendingCount > 0 && (
+              <Badge 
+                variant="secondary" 
+                className="ml-2 bg-yellow-100 text-yellow-800 border-yellow-300"
+              >
+                {pendingCount}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="upload" className="space-y-4">

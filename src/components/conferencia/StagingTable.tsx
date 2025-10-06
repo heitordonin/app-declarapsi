@@ -64,6 +64,7 @@ export function StagingTable({ onClassify }: StagingTableProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
+      queryClient.invalidateQueries({ queryKey: ['staging-uploads-count'] });
       toast.success('Arquivo removido!');
       setDeleteId(null);
     },

@@ -189,6 +189,7 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
+      queryClient.invalidateQueries({ queryKey: ['staging-uploads-count'] });
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       queryClient.invalidateQueries({ queryKey: ['obligation-instances'] });
       queryClient.invalidateQueries({ queryKey: ['calendar-instances'] });
