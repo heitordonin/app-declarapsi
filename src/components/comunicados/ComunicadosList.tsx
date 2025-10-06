@@ -24,14 +24,14 @@ export function ComunicadosList() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedComunicado, setSelectedComunicado] = useState<any>(null);
 
-  const { data: comunicados, isLoading } = useQuery({
+  const { data: comunicados, isLoading, error } = useQuery({
     queryKey: ['communications'],
+    retry: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('communications')
         .select(`
           *,
-          sent_by_profile:profiles!communications_sent_by_fkey(full_name),
           recipients:communication_recipients(
             id,
             client_id,
@@ -76,6 +76,10 @@ export function ComunicadosList() {
 
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+      ) : error ? (
+        <div className="text-center py-8 text-destructive">
+          Erro ao carregar comunicados. Tente novamente.
+        </div>
       ) : (
         <div className="border rounded-lg">
           <Table>
