@@ -114,15 +114,39 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       
       if (!orgData) throw new Error('Organização não encontrada');
 
+      // Generate unique filename if needed
+      let finalFileName = upload.file_name;
+      let newPath = `${orgData.org_id}/${values.client_id}/${finalFileName}`;
+
+      // Check if file already exists at destination
+      const folderPath = `${orgData.org_id}/${values.client_id}`;
+      const { data: existingFiles } = await supabase.storage
+        .from('documents')
+        .list(folderPath, { search: upload.file_name });
+
+      // If file exists, generate unique name with timestamp
+      if (existingFiles && existingFiles.length > 0) {
+        const fileExt = finalFileName.substring(finalFileName.lastIndexOf('.'));
+        const fileBase = finalFileName.substring(0, finalFileName.lastIndexOf('.'));
+        finalFileName = `${fileBase}_${Date.now()}${fileExt}`;
+        newPath = `${orgData.org_id}/${values.client_id}/${finalFileName}`;
+        
+        console.log('Arquivo duplicado detectado, usando nome único:', finalFileName);
+      }
+
       // Move file to permanent location
-      const newPath = `${orgData.org_id}/${values.client_id}/${upload.file_name}`;
       const { error: moveError } = await supabase.storage
         .from('documents')
         .move(upload.file_path, newPath);
       
-      if (moveError) throw moveError;
+      if (moveError) {
+        if (moveError.message?.includes('409') || moveError.message?.includes('Duplicate')) {
+          throw new Error('Arquivo duplicado detectado. Tente novamente.');
+        }
+        throw moveError;
+      }
 
-      // Create document record
+      // Create document record with final filename
       const { error: docError } = await supabase
         .from('documents')
         .insert({
@@ -132,7 +156,7 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
           competence: values.competence,
           amount: values.amount ? parseFloat(values.amount) : null,
           due_at: values.due_at || null,
-          file_name: upload.file_name,
+          file_name: finalFileName,
           file_path: newPath,
           delivered_by: user.id,
           delivered_at: new Date().toISOString(),
@@ -202,9 +226,10 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       onOpenChange(false);
       form.reset();
     },
-    onError: (error) => {
-      toast.error('Erro ao classificar documento');
-      console.error(error);
+    onError: (error: any) => {
+      const errorMessage = error?.message || 'Erro ao classificar documento';
+      toast.error(errorMessage);
+      console.error('Erro na classificação:', error);
     }
   });
 
