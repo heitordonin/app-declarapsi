@@ -111,7 +111,9 @@ export type Database = {
           id: string
           name: string
           neighborhood: string | null
+          nit_nis: string | null
           number: string | null
+          obligations_start_date: string | null
           org_id: string
           phone: string | null
           state: string | null
@@ -131,7 +133,9 @@ export type Database = {
           id?: string
           name: string
           neighborhood?: string | null
+          nit_nis?: string | null
           number?: string | null
+          obligations_start_date?: string | null
           org_id: string
           phone?: string | null
           state?: string | null
@@ -151,7 +155,9 @@ export type Database = {
           id?: string
           name?: string
           neighborhood?: string | null
+          nit_nis?: string | null
           number?: string | null
+          obligations_start_date?: string | null
           org_id?: string
           phone?: string | null
           state?: string | null

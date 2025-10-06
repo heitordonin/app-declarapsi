@@ -46,6 +46,8 @@ export interface Client {
   address?: string;
   number?: string;
   complement?: string;
+  nit_nis?: string;
+  obligations_start_date?: string;
   status: ClientStatus;
   created_at: string;
   archived_at?: string;

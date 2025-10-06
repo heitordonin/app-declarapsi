@@ -28,6 +28,8 @@ const clientSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   cpf: z.string().min(14, "CPF inválido"),
   phone: z.string().optional(),
+  nit_nis: z.string().optional(),
+  obligations_start_date: z.string().optional(),
   cep: z.string().optional(),
   state: z.string().optional(),
   city: z.string().optional(),
@@ -54,6 +56,8 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
       name: client.name,
       cpf: client.cpf,
       phone: client.phone ? client.phone.replace("+55", "") : "",
+      nit_nis: client.nit_nis || "",
+      obligations_start_date: client.obligations_start_date || "",
       cep: client.cep || "",
       state: client.state || "",
       city: client.city || "",
@@ -72,6 +76,8 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
           name: data.name,
           cpf: data.cpf.replace(/\D/g, ""),
           phone: data.phone ? `+55${data.phone.replace(/\D/g, "")}` : null,
+          nit_nis: data.nit_nis?.replace(/\D/g, "") || null,
+          obligations_start_date: data.obligations_start_date || null,
           cep: data.cep,
           state: data.state,
           city: data.city,
@@ -152,12 +158,23 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
     return value.replace(/\D/g, "").replace(/(\d{5})(\d)/, "$1-$2");
   };
 
+  const formatNitNis = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{5})(\d)/, "$1.$2")
+      .replace(/(\d{2})(\d{1})$/, "$1-$2");
+  };
+
   useEffect(() => {
-    // Format CPF and phone on mount
+    // Format CPF, phone, NIT/NIS and CEP on mount
     form.setValue("cpf", formatCpf(client.cpf));
     if (client.phone) {
       const phoneNumbers = client.phone.replace("+55", "").replace(/\D/g, "");
       form.setValue("phone", formatPhone(phoneNumbers));
+    }
+    if (client.nit_nis) {
+      form.setValue("nit_nis", formatNitNis(client.nit_nis));
     }
     if (client.cep) {
       form.setValue("cep", formatCep(client.cep));
@@ -224,6 +241,39 @@ export function EditClientDialog({ client, onClose }: EditClientDialogProps) {
                         maxLength={15}
                         onChange={(e) => field.onChange(formatPhone(e.target.value))}
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="nit_nis"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>NIT/NIS</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="000.00000.00-0"
+                        maxLength={14}
+                        onChange={(e) => field.onChange(formatNitNis(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="obligations_start_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Início Controle Obrigações</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

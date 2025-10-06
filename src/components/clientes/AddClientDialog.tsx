@@ -30,6 +30,8 @@ const clientSchema = z.object({
   email: z.string().email("Email inválido"),
   cpf: z.string().min(14, "CPF inválido"),
   phone: z.string().optional(),
+  nit_nis: z.string().optional(),
+  obligations_start_date: z.string().optional(),
   cep: z.string().optional(),
   state: z.string().optional(),
   city: z.string().optional(),
@@ -54,6 +56,8 @@ export function AddClientDialog() {
       email: "",
       cpf: "",
       phone: "",
+      nit_nis: "",
+      obligations_start_date: "",
       cep: "",
       state: "",
       city: "",
@@ -96,6 +100,8 @@ export function AddClientDialog() {
           email: data.email,
           cpf: data.cpf.replace(/\D/g, ""),
           phone: data.phone ? `+55${data.phone.replace(/\D/g, "")}` : null,
+          nit_nis: data.nit_nis?.replace(/\D/g, "") || null,
+          obligations_start_date: data.obligations_start_date || null,
           cep: data.cep,
           state: data.state,
           city: data.city,
@@ -187,6 +193,14 @@ export function AddClientDialog() {
     return value.replace(/\D/g, "").replace(/(\d{5})(\d)/, "$1-$2");
   };
 
+  const formatNitNis = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{5})(\d)/, "$1.$2")
+      .replace(/(\d{2})(\d{1})$/, "$1-$2");
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -261,6 +275,39 @@ export function AddClientDialog() {
                         maxLength={15}
                         onChange={(e) => field.onChange(formatPhone(e.target.value))}
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="nit_nis"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>NIT/NIS</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="000.00000.00-0"
+                        maxLength={14}
+                        onChange={(e) => field.onChange(formatNitNis(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="obligations_start_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Início Controle Obrigações</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
