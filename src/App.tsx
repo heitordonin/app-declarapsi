@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,15 @@ import ComunicadosCliente from "./pages/cliente/ComunicadosCliente";
 import Perfil from "./pages/cliente/Perfil";
 import NotFound from "./pages/NotFound";
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
+
 function RootRedirect() {
   const { user, role, loading } = useAuth();
 
@@ -39,17 +47,7 @@ function RootRedirect() {
   return <Navigate to="/auth" replace />;
 }
 
-const App = () => {
-  const queryClient = useMemo(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        retry: 1,
-      },
-    },
-  }), []);
-
-  return (
+const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
@@ -92,7 +90,6 @@ const App = () => {
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
-  );
-};
+);
 
 export default App;
