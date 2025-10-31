@@ -15,23 +15,54 @@ export default function AuthCallback() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecoveryType, setIsRecoveryType] = useState(false);
+  const [hasCheckedRecovery, setHasCheckedRecovery] = useState(false);
 
+  // Fase 1: Verificar se é recovery (executa apenas uma vez)
   useEffect(() => {
-    // Parse hash para verificar se é um link de recovery
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      setIsRecoveryType(true);
-    } else {
-      // Se não for recovery, redirecionar baseado no role
-      if (role === 'admin') {
-        navigate('/contador/obrigacoes', { replace: true });
-      } else if (role === 'client') {
-        navigate('/cliente/documentos', { replace: true });
-      } else {
-        navigate('/', { replace: true });
+    const checkRecoveryType = () => {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(window.location.search);
+      const error = params.get('error');
+      const errorDescription = params.get('error_description');
+      
+      // Verificar se há erro no callback
+      if (error) {
+        console.error('Auth callback error:', error, errorDescription);
+        toast({
+          variant: 'destructive',
+          title: 'Link inválido ou expirado',
+          description: 'Por favor, solicite um novo link de cadastro.',
+        });
+        setTimeout(() => navigate('/auth', { replace: true }), 3000);
+        return;
       }
+      
+      const type = params.get('type');
+      const isRecovery = hash.includes('type=recovery') || type === 'recovery';
+      
+      console.log('Checking recovery type:', { hash, type, isRecovery });
+      
+      setIsRecoveryType(isRecovery);
+      setHasCheckedRecovery(true);
+    };
+    
+    checkRecoveryType();
+  }, [navigate]);
+
+  // Fase 2: Redirecionar se NÃO for recovery (só após verificar)
+  useEffect(() => {
+    if (!hasCheckedRecovery) return;
+    if (isRecoveryType) return;
+    if (!role) return;
+
+    if (role === 'admin') {
+      navigate('/contador/obrigacoes', { replace: true });
+    } else if (role === 'client') {
+      navigate('/cliente/inicio', { replace: true });
+    } else {
+      navigate('/', { replace: true });
     }
-  }, [role, navigate]);
+  }, [hasCheckedRecovery, isRecoveryType, role, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +104,7 @@ export default function AuthCallback() {
         if (role === 'admin') {
           navigate('/contador/obrigacoes', { replace: true });
         } else if (role === 'client') {
-          navigate('/cliente/documentos', { replace: true });
+          navigate('/cliente/inicio', { replace: true });
         } else {
           navigate('/', { replace: true });
         }
