@@ -23,16 +23,19 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  if (requiredRole && role !== requiredRole) {
-    // Redirect based on their actual role
-    if (role === 'admin') {
-      return <Navigate to="/contador/obrigacoes" replace />;
-    } else if (role === 'client') {
-      return <Navigate to="/cliente/documentos" replace />;
-    } else {
-      return <Navigate to="/auth" replace />;
-    }
+  // Admins can access any route
+  if (role === 'admin') {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  // Clients can only access client routes
+  if (role === 'client') {
+    if (requiredRole === 'admin') {
+      return <Navigate to="/cliente/documentos" replace />;
+    }
+    return <>{children}</>;
+  }
+
+  // Invalid or undefined role - redirect to login
+  return <Navigate to="/auth" replace />;
 }
