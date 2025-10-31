@@ -624,10 +624,7 @@ export type Database = {
         Args: { _communication_id: string; _user_id: string }
         Returns: boolean
       }
-      get_user_org: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_user_org: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
