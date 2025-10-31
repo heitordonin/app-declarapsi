@@ -26,8 +26,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ClientObligation } from "@/types/database";
 import { getFrequencyLabel } from "@/lib/frequency-utils";
+import { VinculoWithRelations } from "@/types/vinculos";
 
 const editVinculoSchema = z.object({
   active: z.boolean(),
@@ -53,7 +53,7 @@ type EditVinculoFormValues = z.infer<typeof editVinculoSchema>;
 interface EditVinculoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vinculo: (ClientObligation & { client: any; obligation: any }) | null;
+  vinculo: VinculoWithRelations | null;
 }
 
 export function EditVinculoDialog({ open, onOpenChange, vinculo }: EditVinculoDialogProps) {

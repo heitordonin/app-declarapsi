@@ -8,7 +8,8 @@ import { EditObrigacaoDialog } from "@/components/obrigacoes/EditObrigacaoDialog
 import { VinculosList } from "@/components/vinculos/VinculosList";
 import { AddVinculoDialog } from "@/components/vinculos/AddVinculoDialog";
 import { EditVinculoDialog } from "@/components/vinculos/EditVinculoDialog";
-import { Obligation, ClientObligation } from "@/types/database";
+import { Obligation } from "@/types/database";
+import { VinculoWithRelations } from "@/types/vinculos";
 
 export default function Configuracoes() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -17,14 +18,14 @@ export default function Configuracoes() {
   
   const [addVinculoDialogOpen, setAddVinculoDialogOpen] = useState(false);
   const [editVinculoDialogOpen, setEditVinculoDialogOpen] = useState(false);
-  const [selectedVinculo, setSelectedVinculo] = useState<(ClientObligation & { client: any; obligation: any }) | null>(null);
+  const [selectedVinculo, setSelectedVinculo] = useState<VinculoWithRelations | null>(null);
 
   const handleEdit = (obrigacao: Obligation) => {
     setSelectedObrigacao(obrigacao);
     setEditDialogOpen(true);
   };
 
-  const handleEditVinculo = (vinculo: ClientObligation & { client: any; obligation: any }) => {
+  const handleEditVinculo = (vinculo: VinculoWithRelations) => {
     setSelectedVinculo(vinculo);
     setEditVinculoDialogOpen(true);
   };

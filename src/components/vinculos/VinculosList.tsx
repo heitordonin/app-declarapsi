@@ -34,10 +34,10 @@ import { MoreVertical, Edit, Trash2, Link as LinkIcon, Power } from "lucide-reac
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { getFrequencyLabel, getFrequencyColor } from "@/lib/frequency-utils";
-import { ClientObligation } from "@/types/database";
+import { VinculoWithRelations } from "@/types/vinculos";
 
 interface VinculosListProps {
-  onEdit: (vinculo: ClientObligation & { client: any; obligation: any }) => void;
+  onEdit: (vinculo: VinculoWithRelations) => void;
 }
 
 export function VinculosList({ onEdit }: VinculosListProps) {
