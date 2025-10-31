@@ -7,6 +7,7 @@ import { Paperclip } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ViewComunicadoClienteDialog } from './ViewComunicadoClienteDialog';
+import { useSanitizedHTML } from '@/hooks/useSanitizedHTML';
 
 export function ComunicadosClienteList() {
   const [selectedComunicado, setSelectedComunicado] = useState<any>(null);
@@ -59,6 +60,10 @@ export function ComunicadosClienteList() {
             const attachments = Array.isArray(communication.attachments) ? communication.attachments : [];
             const hasAttachments = attachments.length > 0;
             const isNew = !item.viewed_at;
+            
+            // Sanitizar preview para prevenir XSS
+            const preview = communication.message.substring(0, 150) + '...';
+            const sanitizedPreview = useSanitizedHTML(preview);
 
             return (
               <Card
@@ -91,9 +96,7 @@ export function ComunicadosClienteList() {
                 <CardContent>
                   <div
                     className="prose prose-sm max-w-none text-muted-foreground line-clamp-2"
-                    dangerouslySetInnerHTML={{
-                      __html: communication.message.substring(0, 150) + '...',
-                    }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedPreview }}
                   />
                 </CardContent>
               </Card>

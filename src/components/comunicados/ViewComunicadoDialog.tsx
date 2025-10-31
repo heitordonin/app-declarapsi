@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSanitizedHTML } from '@/hooks/useSanitizedHTML';
 import {
   Table,
   TableBody,
@@ -59,6 +60,9 @@ export function ViewComunicadoDialog({
   };
 
   const attachments = Array.isArray(comunicado.attachments) ? comunicado.attachments : [];
+  
+  // Sanitizar HTML para prevenir XSS
+  const sanitizedMessage = useSanitizedHTML(comunicado.message);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,7 +77,7 @@ export function ViewComunicadoDialog({
           </div>
 
           <div className="prose prose-sm max-w-none border rounded-lg p-4 bg-muted/30">
-            <div dangerouslySetInnerHTML={{ __html: comunicado.message }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizedMessage }} />
           </div>
 
           {attachments.length > 0 && (

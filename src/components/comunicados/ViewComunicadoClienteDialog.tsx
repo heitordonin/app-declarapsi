@@ -12,6 +12,7 @@ import { Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { useSanitizedHTML } from '@/hooks/useSanitizedHTML';
 
 interface ViewComunicadoClienteDialogProps {
   open: boolean;
@@ -77,6 +78,9 @@ export function ViewComunicadoClienteDialog({
   if (!communication) return null;
 
   const attachments = Array.isArray(communication.attachments) ? communication.attachments : [];
+  
+  // Sanitizar HTML para prevenir XSS
+  const sanitizedMessage = useSanitizedHTML(communication.message);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,7 +98,7 @@ export function ViewComunicadoClienteDialog({
           </div>
 
           <div className="prose prose-sm max-w-none border rounded-lg p-4 bg-muted/30">
-            <div dangerouslySetInnerHTML={{ __html: communication.message }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizedMessage }} />
           </div>
 
           {attachments.length > 0 && (
