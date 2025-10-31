@@ -1,13 +1,7 @@
 project_id = "jfxmwgyysbkdsdofefcp"
 
-[functions.generate-obligation-instances]
-verify_jwt = false
-
-[functions.send-welcome-email]
-verify_jwt = false
-
-[functions.send-document-notification]
-verify_jwt = false
-
 [functions.send-due-reminders]
+verify_jwt = false
+
+[functions.update-obligation-statuses]
 verify_jwt = false

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
+import { validateAccess } from '../_shared/middleware.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,6 +33,10 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Validar autenticação e role de admin
+    const { user } = await validateAccess(req, supabase, 'admin', 'generate-obligation-instances');
+    console.log('Admin user validated:', user.id);
 
     console.log('Starting instance generation...');
 

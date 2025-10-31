@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
 import { Resend } from 'https://esm.sh/resend@2.0.0';
+import { validateAccess } from '../_shared/middleware.ts';
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string);
 
@@ -26,6 +27,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Validar autenticação e role de admin
+    const { user } = await validateAccess(req, supabaseClient, 'admin', 'send-welcome-email');
+    console.log('Admin user validated:', user.id);
 
     const { clientId, clientName, email, appUrl }: WelcomeEmailRequest = await req.json();
 
