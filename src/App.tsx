@@ -16,6 +16,10 @@ import Configuracoes from "./pages/contador/Configuracoes";
 import Comunicados from "./pages/contador/Comunicados";
 import Clientes from "./pages/contador/Clientes";
 import ClienteLayout from "./pages/cliente/ClienteLayout";
+import Inicio from "./pages/cliente/Inicio";
+import Controle from "./pages/cliente/Controle";
+import Pagar from "./pages/cliente/Pagar";
+import Outros from "./pages/cliente/Outros";
 import Documentos from "./pages/cliente/Documentos";
 import ComunicadosCliente from "./pages/cliente/ComunicadosCliente";
 import Perfil from "./pages/cliente/Perfil";
@@ -42,7 +46,7 @@ function RootRedirect() {
   if (role === 'admin') {
     return <Navigate to="/contador/obrigacoes" replace />;
   } else if (role === 'client') {
-    return <Navigate to="/cliente/documentos" replace />;
+    return <Navigate to="/cliente/inicio" replace />;
   }
 
   return <Navigate to="/auth" replace />;
@@ -81,6 +85,11 @@ const App = () => (
                 <ClienteLayout />
               </ProtectedRoute>
             }>
+              <Route index element={<Navigate to="inicio" replace />} />
+              <Route path="inicio" element={<Inicio />} />
+              <Route path="controle" element={<Controle />} />
+              <Route path="pagar" element={<Pagar />} />
+              <Route path="outros" element={<Outros />} />
               <Route path="documentos" element={<Documentos />} />
               <Route path="comunicados" element={<ComunicadosCliente />} />
               <Route path="perfil" element={<Perfil />} />
