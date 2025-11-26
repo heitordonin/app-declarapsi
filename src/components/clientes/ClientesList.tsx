@@ -43,7 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Archive, Edit, Eye } from "lucide-react";
+import { MoreVertical, Archive, ArchiveRestore, Edit } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Client } from "@/types/database";
 import { AddClientDialog } from "./AddClientDialog";
@@ -54,6 +54,7 @@ export function ClientesList() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("all");
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [clientToArchive, setClientToArchive] = useState<Client | null>(null);
+  const [clientToUnarchive, setClientToUnarchive] = useState<Client | null>(null);
   const queryClient = useQueryClient();
 
   const { data: clients = [], isLoading } = useQuery({
@@ -92,6 +93,32 @@ export function ClientesList() {
     onError: (error) => {
       toast({
         title: "Erro ao arquivar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unarchiveMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      const { error } = await supabase
+        .from("clients")
+        .update({ status: "active", archived_at: null })
+        .eq("id", clientId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      toast({
+        title: "Cliente reativado",
+        description: "O cliente foi reativado com sucesso.",
+      });
+      setClientToUnarchive(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao reativar",
         description: error.message,
         variant: "destructive",
       });
@@ -161,13 +188,21 @@ export function ClientesList() {
                 <Edit className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
-              {client.status === "active" && (
+              {client.status === "active" ? (
                 <DropdownMenuItem
                   onClick={() => setClientToArchive(client)}
                   className="text-destructive"
                 >
                   <Archive className="mr-2 h-4 w-4" />
                   Arquivar
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => setClientToUnarchive(client)}
+                  className="text-green-600"
+                >
+                  <ArchiveRestore className="mr-2 h-4 w-4" />
+                  Desarquivar
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -320,6 +355,26 @@ export function ClientesList() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Arquivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!clientToUnarchive} onOpenChange={() => setClientToUnarchive(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reativar Cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja reativar o cliente <strong>{clientToUnarchive?.name}</strong>?
+              O cliente voltará a aparecer na lista de clientes ativos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clientToUnarchive && unarchiveMutation.mutate(clientToUnarchive.id)}
+            >
+              Reativar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
