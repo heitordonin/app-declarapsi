@@ -21,8 +21,18 @@ import {
   Calculator,
   CreditCard,
   FileText,
-  MessageSquare
+  MessageSquare,
+  User,
+  Settings,
+  Gift
 } from 'lucide-react';
+
+// Itens do bloco inferior do menu
+const bottomMenuItems = [
+  { icon: User, label: 'Perfil', path: '/cliente/perfil' },
+  { icon: Settings, label: 'Configurações', path: '/cliente/configuracoes' },
+  { icon: Gift, label: 'Indique um amigo', path: '/cliente/indique-amigo' },
+];
 
 // Estrutura dos módulos do sidebar
 const sidebarModules = [
@@ -170,9 +180,28 @@ export default function ClienteLayout() {
                 ))}
               </div>
               
-              {/* Botão Sair */}
-              <div className="p-3 border-t">
-                <Button variant="outline" className="w-full justify-start" onClick={() => signOut()}>
+              {/* Menu inferior: Perfil, Configurações, Indique e Sair */}
+              <div className="p-3 border-t space-y-1">
+                {bottomMenuItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={handleNavClick}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors w-full",
+                        isActive 
+                          ? "bg-primary/10 text-primary font-medium" 
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+                <Button variant="outline" className="w-full justify-start mt-2" onClick={() => signOut()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sair
                 </Button>
