@@ -24,6 +24,9 @@ import Despesas from "./pages/cliente/Despesas";
 import Pagamentos from "./pages/cliente/Pagamentos";
 import Documentos from "./pages/cliente/Documentos";
 import ClienteComunicados from "./pages/cliente/Comunicados";
+import Perfil from "./pages/cliente/Perfil";
+import ClienteConfiguracoes from "./pages/cliente/Configuracoes";
+import IndiqueAmigo from "./pages/cliente/IndiqueAmigo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -97,6 +100,10 @@ const App = () => (
               <Route path="pagamentos" element={<Pagamentos />} />
               <Route path="documentos" element={<Documentos />} />
               <Route path="comunicados" element={<ClienteComunicados />} />
+              {/* Conta */}
+              <Route path="perfil" element={<Perfil />} />
+              <Route path="configuracoes" element={<ClienteConfiguracoes />} />
+              <Route path="indique-amigo" element={<IndiqueAmigo />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
