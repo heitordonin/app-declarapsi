@@ -4,26 +4,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
 
 const reminderOptions = [
-  { value: '5', label: '5 minutos antes' },
-  { value: '10', label: '10 minutos antes' },
-  { value: '15', label: '15 minutos antes' },
-  { value: '30', label: '30 minutos antes' },
-  { value: '60', label: '1 hora antes' },
-  { value: '120', label: '2 horas antes' },
-  { value: '1440', label: '1 dia antes' },
-  { value: '2880', label: '2 dias antes' },
+  { value: '0', label: 'No dia' },
+  { value: '1', label: '1 dia antes' },
+  { value: '2', label: '2 dias antes' },
+  { value: '5', label: '5 dias antes' },
 ];
 
 export default function Configuracoes() {
   const [emailEnabled, setEmailEnabled] = useState(true);
-  const [emailReminder1, setEmailReminder1] = useState('5');
-  const [emailReminder2, setEmailReminder2] = useState('60');
+  const [emailReminder1, setEmailReminder1] = useState('0');
+  const [emailReminder2, setEmailReminder2] = useState('1');
   
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
-  const [whatsappReminder1, setWhatsappReminder1] = useState('5');
-  const [whatsappReminder2, setWhatsappReminder2] = useState('60');
+  const [whatsappReminder1, setWhatsappReminder1] = useState('0');
+  const [whatsappReminder2, setWhatsappReminder2] = useState('1');
+
+  const handleEmailToggle = (checked: boolean) => {
+    setEmailEnabled(checked);
+    toast({
+      title: checked ? 'Lembretes por e-mail ativados' : 'Lembretes por e-mail desativados',
+      description: 'Configuração salva com sucesso.',
+    });
+  };
+
+  const handleWhatsappToggle = (checked: boolean) => {
+    setWhatsappEnabled(checked);
+    toast({
+      title: checked ? 'Lembretes por WhatsApp ativados' : 'Lembretes por WhatsApp desativados',
+      description: 'Configuração salva com sucesso.',
+    });
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -45,7 +58,7 @@ export default function Configuracoes() {
             <div className="flex items-center gap-3">
               <Switch
                 checked={emailEnabled}
-                onCheckedChange={setEmailEnabled}
+                onCheckedChange={handleEmailToggle}
                 id="email-enabled"
               />
               <Label htmlFor="email-enabled" className="font-medium">
@@ -106,7 +119,7 @@ export default function Configuracoes() {
             <div className="flex items-center gap-3">
               <Switch
                 checked={whatsappEnabled}
-                onCheckedChange={setWhatsappEnabled}
+                onCheckedChange={handleWhatsappToggle}
                 id="whatsapp-enabled"
               />
               <Label htmlFor="whatsapp-enabled" className="font-medium">
