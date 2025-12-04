@@ -1,13 +1,36 @@
-import { LayoutDashboard } from 'lucide-react';
+import { useState } from 'react';
+import { startOfMonth, endOfMonth } from 'date-fns';
+import { QuickActions } from '@/components/cliente/dashboard/QuickActions';
+import { PeriodFilter } from '@/components/cliente/dashboard/PeriodFilter';
+import { DashboardKPIs } from '@/components/cliente/dashboard/DashboardKPIs';
+import { RevenueExpenseChart } from '@/components/cliente/dashboard/RevenueExpenseChart';
+import { ProfitMarginGauge } from '@/components/cliente/dashboard/ProfitMarginGauge';
+import { useDashboardData } from '@/hooks/cliente/useDashboardData';
 
 export default function Dashboard() {
+  const [period, setPeriod] = useState({
+    start: startOfMonth(new Date()),
+    end: endOfMonth(new Date()),
+  });
+
+  const dashboardData = useDashboardData(period.start, period.end);
+
+  const handlePeriodChange = (start: Date, end: Date) => {
+    setPeriod({ start, end });
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-      <LayoutDashboard className="h-16 w-16 text-muted-foreground mb-4" />
-      <h1 className="text-2xl font-bold text-foreground mb-2">Dashboard</h1>
-      <p className="text-muted-foreground text-center">
-        Esta página está sendo desenvolvida.
-      </p>
+    <div className="p-4 md:p-6 space-y-6">
+      <QuickActions />
+      
+      <PeriodFilter onPeriodChange={handlePeriodChange} />
+      
+      <DashboardKPIs data={dashboardData.kpis} />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RevenueExpenseChart data={dashboardData.revenueExpense} />
+        <ProfitMarginGauge value={dashboardData.profitMargin} />
+      </div>
     </div>
   );
 }
