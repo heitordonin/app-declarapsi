@@ -1,5 +1,7 @@
+import { FileText } from 'lucide-react';
 import { DocumentsTable } from './DocumentsTable';
 import { DocumentCard } from './DocumentCard';
+import { EmptyState } from '../EmptyState';
 import type { Document } from '@/hooks/cliente/useDocumentsData';
 
 interface DocumentsListProps {
@@ -9,9 +11,11 @@ interface DocumentsListProps {
 export function DocumentsList({ documents }: DocumentsListProps) {
   if (documents.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        Nenhum documento encontrado
-      </div>
+      <EmptyState
+        icon={FileText}
+        title="Nenhum documento"
+        description="Você ainda não possui documentos permanentes."
+      />
     );
   }
 

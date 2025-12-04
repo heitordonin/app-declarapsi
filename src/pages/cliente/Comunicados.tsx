@@ -1,13 +1,23 @@
 import { MessageSquare } from 'lucide-react';
+import { EmptyState } from '@/components/cliente/EmptyState';
 
 export default function Comunicados() {
+  // TODO: Replace with real data from useQuery
+  const comunicados: unknown[] = [];
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-      <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
-      <h1 className="text-2xl font-bold text-foreground mb-2">Comunicados</h1>
-      <p className="text-muted-foreground text-center">
-        Esta página está sendo desenvolvida.
-      </p>
+    <div className="p-4 md:p-6 space-y-4">
+      <h1 className="text-2xl font-bold text-foreground">Comunicados</h1>
+
+      {comunicados.length === 0 ? (
+        <EmptyState
+          icon={MessageSquare}
+          title="Nenhum comunicado"
+          description="Você ainda não recebeu nenhum comunicado."
+        />
+      ) : (
+        <div>{/* Lista de comunicados será implementada aqui */}</div>
+      )}
     </div>
   );
 }
