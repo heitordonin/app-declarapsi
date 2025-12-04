@@ -58,7 +58,7 @@ export default function AuthCallback() {
     if (role === 'admin') {
       navigate('/contador/obrigacoes', { replace: true });
     } else if (role === 'client') {
-      navigate('/cliente/inicio', { replace: true });
+      navigate('/cliente', { replace: true });
     } else {
       navigate('/', { replace: true });
     }
@@ -104,7 +104,7 @@ export default function AuthCallback() {
         if (role === 'admin') {
           navigate('/contador/obrigacoes', { replace: true });
         } else if (role === 'client') {
-          navigate('/cliente/inicio', { replace: true });
+          navigate('/cliente', { replace: true });
         } else {
           navigate('/', { replace: true });
         }

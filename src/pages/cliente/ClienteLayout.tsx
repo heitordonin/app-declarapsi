@@ -8,13 +8,8 @@ import { cn } from '@/lib/utils';
 import {
   Menu,
   LogOut,
-  FileText,
-  Mail,
-  User,
   Home,
-  BarChart,
   CreditCard,
-  LayoutGrid,
   Loader2
 } from 'lucide-react';
 
@@ -45,27 +40,22 @@ function BottomNavItem({ to, icon: Icon, label }: BottomNavItemProps) {
 
 // Links da navegação principal (inferior)
 const bottomNavItems = [
-  { icon: Home, label: 'Início', path: '/cliente/inicio' },
-  { icon: BarChart, label: 'Controle', path: '/cliente/controle' },
+  { icon: Home, label: 'Início', path: '/cliente' },
   { icon: CreditCard, label: 'Pagar', path: '/cliente/pagar' },
-  { icon: LayoutGrid, label: 'Outros', path: '/cliente/outros' },
-];
-
-// Links do menu lateral (Sheet)
-const sidebarNavItems = [
-  { icon: FileText, label: 'Meus Documentos', path: '/cliente/documentos' },
-  { icon: Mail, label: 'Comunicados', path: '/cliente/comunicados' },
-  { icon: User, label: 'Meu Perfil', path: '/cliente/perfil' },
 ];
 
 export default function ClienteLayout() {
-  const { user, signOut } = useAuth();
+  const { signOut } = useAuth();
   const location = useLocation();
+
+  // Esconder menu inferior na página index
+  const showBottomNav = location.pathname !== '/cliente';
 
   // Buscar dados do cliente (para CPF)
   const { data: client, isLoading } = useQuery({
-    queryKey: ['client-data', user?.id],
+    queryKey: ['client-data'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
       const { data, error } = await supabase
         .from('clients')
@@ -75,7 +65,6 @@ export default function ClienteLayout() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
   });
 
   const formatCpf = (cpf: string) => {
@@ -97,23 +86,7 @@ export default function ClienteLayout() {
               <div className="p-6 border-b">
                 <h2 className="text-xl font-bold text-foreground">DeclaraPsi</h2>
               </div>
-              <nav className="flex-1 space-y-1 p-3">
-                {sidebarNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <Link key={item.path} to={item.path}>
-                      <Button
-                        variant={isActive ? 'secondary' : 'ghost'}
-                        className="w-full justify-start"
-                      >
-                        <Icon className="mr-2 h-4 w-4" />
-                        {item.label}
-                      </Button>
-                    </Link>
-                  );
-                })}
-              </nav>
+              <div className="flex-1" />
               <div className="p-3 border-t">
                 <Button variant="outline" className="w-full justify-start" onClick={() => signOut()}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -139,23 +112,25 @@ export default function ClienteLayout() {
       </header>
 
       {/* Conteúdo Principal (com padding para não ficar sob o header/footer) */}
-      <main className="flex-1 overflow-auto pt-16 pb-20">
+      <main className={cn("flex-1 overflow-auto pt-16", showBottomNav ? "pb-20" : "pb-6")}>
         <Outlet />
       </main>
 
       {/* Navegação Inferior Fixa */}
-      <footer className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t z-20">
-        <nav className="flex h-full">
-          {bottomNavItems.map((item) => (
-            <BottomNavItem
-              key={item.path}
-              to={item.path}
-              icon={item.icon}
-              label={item.label}
-            />
-          ))}
-        </nav>
-      </footer>
+      {showBottomNav && (
+        <footer className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t z-20">
+          <nav className="flex h-full">
+            {bottomNavItems.map((item) => (
+              <BottomNavItem
+                key={item.path}
+                to={item.path}
+                icon={item.icon}
+                label={item.label}
+              />
+            ))}
+          </nav>
+        </footer>
+      )}
     </div>
   );
 }
