@@ -1,0 +1,80 @@
+import { Search, UserPlus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Patient } from '@/hooks/cliente/usePatientsData';
+import { cn } from '@/lib/utils';
+
+interface PatientsListProps {
+  patients: Patient[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onAddNew: () => void;
+}
+
+function formatCPF(cpf: string): string {
+  if (!cpf) return '';
+  const cleaned = cpf.replace(/\D/g, '');
+  if (cleaned.length !== 11) return cpf;
+  return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+export function PatientsList({
+  patients,
+  selectedId,
+  onSelect,
+  searchQuery,
+  onSearchChange,
+  onAddNew,
+}: PatientsListProps) {
+  return (
+    <Card className="h-full flex flex-col p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-foreground">Pacientes</h2>
+        <Button size="sm" onClick={onAddNew}>
+          <UserPlus className="h-4 w-4 mr-1" />
+          Novo Paciente
+        </Button>
+      </div>
+
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome ou CPF..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-2">
+        {patients.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            Nenhum paciente encontrado
+          </p>
+        ) : (
+          patients.map((patient) => (
+            <button
+              key={patient.id}
+              onClick={() => onSelect(patient.id)}
+              className={cn(
+                'w-full text-left p-3 rounded-lg border transition-colors',
+                'hover:bg-muted/50',
+                selectedId === patient.id
+                  ? 'border-l-4 border-l-primary bg-primary/5 border-primary/20'
+                  : 'border-border'
+              )}
+            >
+              <p className="font-medium text-foreground">{patient.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {patient.cpf ? `CPF: ${formatCPF(patient.cpf)}` : 'CPF: Não informado'}
+              </p>
+            </button>
+          ))
+        )}
+      </div>
+    </Card>
+  );
+}
