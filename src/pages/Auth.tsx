@@ -22,7 +22,7 @@ export default function Auth() {
       if (role === 'admin') {
         navigate('/contador/obrigacoes');
       } else if (role === 'client') {
-        navigate('/cliente/documentos');
+        navigate('/cliente');
       }
     }
   }, [user, role, authLoading, navigate]);

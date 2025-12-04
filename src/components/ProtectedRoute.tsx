@@ -31,7 +31,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   // Clients can only access client routes
   if (role === 'client') {
     if (requiredRole === 'admin') {
-      return <Navigate to="/cliente/documentos" replace />;
+      return <Navigate to="/cliente" replace />;
     }
     return <>{children}</>;
   }
