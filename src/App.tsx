@@ -17,7 +17,13 @@ import Comunicados from "./pages/contador/Comunicados";
 import Clientes from "./pages/contador/Clientes";
 import ClienteLayout from "./pages/cliente/ClienteLayout";
 import Index from "./pages/cliente/Index";
-import Pagar from "./pages/cliente/Pagar";
+import Dashboard from "./pages/cliente/Dashboard";
+import Pacientes from "./pages/cliente/Pacientes";
+import Receitas from "./pages/cliente/Receitas";
+import Despesas from "./pages/cliente/Despesas";
+import Pagamentos from "./pages/cliente/Pagamentos";
+import Documentos from "./pages/cliente/Documentos";
+import ClienteComunicados from "./pages/cliente/Comunicados";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -81,7 +87,16 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route index element={<Index />} />
-              <Route path="pagar" element={<Pagar />} />
+              {/* Gestão */}
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="pacientes" element={<Pacientes />} />
+              {/* Financeiro */}
+              <Route path="receitas" element={<Receitas />} />
+              <Route path="despesas" element={<Despesas />} />
+              {/* Contabilidade */}
+              <Route path="pagamentos" element={<Pagamentos />} />
+              <Route path="documentos" element={<Documentos />} />
+              <Route path="comunicados" element={<ClienteComunicados />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
