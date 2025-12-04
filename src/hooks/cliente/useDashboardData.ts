@@ -7,11 +7,6 @@ interface DashboardData {
     totalExpenses: number;
     averageTicket: number;
   };
-  revenueExpense: Array<{
-    period: string;
-    receitas: number;
-    despesas: number;
-  }>;
   profitMargin: number;
 }
 
@@ -29,12 +24,6 @@ export function useDashboardData(startDate: Date, endDate: Date): DashboardData 
         totalExpenses,
         averageTicket: consultationsCount > 0 ? totalRevenue / consultationsCount : 0,
       },
-      revenueExpense: [
-        { period: 'Semana 1', receitas: 4000, despesas: 1500 },
-        { period: 'Semana 2', receitas: 3500, despesas: 1200 },
-        { period: 'Semana 3', receitas: 4200, despesas: 1300 },
-        { period: 'Semana 4', receitas: 3300, despesas: 1200 },
-      ],
       profitMargin: totalRevenue > 0 
         ? ((totalRevenue - totalExpenses) / totalRevenue) * 100 
         : 0,

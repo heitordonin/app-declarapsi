@@ -28,7 +28,10 @@ export default function Dashboard() {
       <DashboardKPIs data={dashboardData.kpis} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RevenueExpenseChart data={dashboardData.revenueExpense} />
+        <RevenueExpenseChart 
+          totalRevenue={dashboardData.kpis.totalRevenue} 
+          totalExpenses={dashboardData.kpis.totalExpenses} 
+        />
         <ProfitMarginGauge value={dashboardData.profitMargin} />
       </div>
     </div>
