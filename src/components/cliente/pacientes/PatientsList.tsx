@@ -1,6 +1,5 @@
-import { Search, UserPlus } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Patient } from '@/hooks/cliente/usePatientsData';
 import { cn } from '@/lib/utils';
@@ -11,7 +10,6 @@ interface PatientsListProps {
   onSelect: (id: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onAddNew: () => void;
 }
 
 function formatCPF(cpf: string): string {
@@ -27,18 +25,9 @@ export function PatientsList({
   onSelect,
   searchQuery,
   onSearchChange,
-  onAddNew,
 }: PatientsListProps) {
   return (
     <Card className="h-full flex flex-col p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-foreground">Pacientes</h2>
-        <Button size="sm" onClick={onAddNew}>
-          <UserPlus className="h-4 w-4 mr-1" />
-          Novo Paciente
-        </Button>
-      </div>
-
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
