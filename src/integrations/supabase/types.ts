@@ -101,12 +101,15 @@ export type Database = {
         Row: {
           address: string | null
           archived_at: string | null
+          birth_date: string | null
           cep: string | null
           city: string | null
           code: string
           complement: string | null
           cpf: string
           created_at: string
+          crp_number: string | null
+          display_name: string | null
           email: string
           id: string
           name: string
@@ -123,12 +126,15 @@ export type Database = {
         Insert: {
           address?: string | null
           archived_at?: string | null
+          birth_date?: string | null
           cep?: string | null
           city?: string | null
           code: string
           complement?: string | null
           cpf: string
           created_at?: string
+          crp_number?: string | null
+          display_name?: string | null
           email: string
           id?: string
           name: string
@@ -145,12 +151,15 @@ export type Database = {
         Update: {
           address?: string | null
           archived_at?: string | null
+          birth_date?: string | null
           cep?: string | null
           city?: string | null
           code?: string
           complement?: string | null
           cpf?: string
           created_at?: string
+          crp_number?: string | null
+          display_name?: string | null
           email?: string
           id?: string
           name?: string
