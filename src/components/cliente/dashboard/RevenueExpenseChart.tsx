@@ -6,19 +6,16 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
+  Cell,
 } from 'recharts';
 
 interface RevenueExpenseChartProps {
-  data: Array<{
-    period: string;
-    receitas: number;
-    despesas: number;
-  }>;
+  totalRevenue: number;
+  totalExpenses: number;
 }
 
-export function RevenueExpenseChart({ data }: RevenueExpenseChartProps) {
+export function RevenueExpenseChart({ totalRevenue, totalExpenses }: RevenueExpenseChartProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -26,6 +23,11 @@ export function RevenueExpenseChart({ data }: RevenueExpenseChartProps) {
       minimumFractionDigits: 0,
     }).format(value);
   };
+
+  const data = [
+    { name: 'Receitas', value: totalRevenue, fill: 'hsl(var(--accent))' },
+    { name: 'Despesas', value: totalExpenses, fill: 'hsl(var(--destructive))' },
+  ];
 
   return (
     <Card className="h-full">
@@ -38,7 +40,7 @@ export function RevenueExpenseChart({ data }: RevenueExpenseChartProps) {
             <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis 
-                dataKey="period" 
+                dataKey="name" 
                 tick={{ fontSize: 12 }}
                 className="text-muted-foreground"
               />
@@ -56,19 +58,15 @@ export function RevenueExpenseChart({ data }: RevenueExpenseChartProps) {
                   borderRadius: '8px',
                 }}
               />
-              <Legend />
               <Bar 
-                dataKey="receitas" 
-                name="Receitas" 
-                fill="hsl(var(--accent))" 
+                dataKey="value" 
                 radius={[4, 4, 0, 0]}
-              />
-              <Bar 
-                dataKey="despesas" 
-                name="Despesas" 
-                fill="hsl(var(--destructive))" 
-                radius={[4, 4, 0, 0]}
-              />
+                barSize={80}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
