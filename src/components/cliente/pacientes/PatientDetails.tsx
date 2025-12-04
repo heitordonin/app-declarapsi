@@ -8,6 +8,7 @@ import { PatientCharges } from './PatientCharges';
 interface PatientDetailsProps {
   patient: Patient;
   onEdit?: () => void;
+  isMobile?: boolean;
 }
 
 function formatCPF(cpf: string): string {
@@ -17,24 +18,26 @@ function formatCPF(cpf: string): string {
   return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 }
 
-export function PatientDetails({ patient, onEdit }: PatientDetailsProps) {
+export function PatientDetails({ patient, onEdit, isMobile }: PatientDetailsProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b mb-4">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">{patient.name}</h2>
-          <p className="text-sm text-muted-foreground">
-            CPF: {formatCPF(patient.cpf)}
-          </p>
+      {/* Header - hidden on mobile (uses PatientDetailsMobileHeader instead) */}
+      {!isMobile && (
+        <div className="flex items-center justify-between pb-4 border-b mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">{patient.name}</h2>
+            <p className="text-sm text-muted-foreground">
+              CPF: {formatCPF(patient.cpf)}
+            </p>
+          </div>
+          {onEdit && (
+            <Button variant="outline" size="sm" onClick={onEdit}>
+              <Pencil className="h-4 w-4 mr-1" />
+              Editar
+            </Button>
+          )}
         </div>
-        {onEdit && (
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Pencil className="h-4 w-4 mr-1" />
-            Editar
-          </Button>
-        )}
-      </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto space-y-4">
