@@ -494,6 +494,118 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_invite_tokens: {
+        Row: {
+          client_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_invite_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          address: string | null
+          cep: string | null
+          city: string | null
+          client_id: string
+          complement: string | null
+          created_at: string
+          created_via: Database["public"]["Enums"]["created_via"]
+          document: string | null
+          email: string
+          financial_responsible_cpf: string | null
+          has_financial_responsible: boolean
+          id: string
+          is_foreign_payment: boolean
+          name: string
+          neighborhood: string | null
+          number: string | null
+          phone: string
+          state: string | null
+          type: Database["public"]["Enums"]["patient_type"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cep?: string | null
+          city?: string | null
+          client_id: string
+          complement?: string | null
+          created_at?: string
+          created_via?: Database["public"]["Enums"]["created_via"]
+          document?: string | null
+          email: string
+          financial_responsible_cpf?: string | null
+          has_financial_responsible?: boolean
+          id?: string
+          is_foreign_payment?: boolean
+          name: string
+          neighborhood?: string | null
+          number?: string | null
+          phone: string
+          state?: string | null
+          type?: Database["public"]["Enums"]["patient_type"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cep?: string | null
+          city?: string | null
+          client_id?: string
+          complement?: string | null
+          created_at?: string
+          created_via?: Database["public"]["Enums"]["created_via"]
+          document?: string | null
+          email?: string
+          financial_responsible_cpf?: string | null
+          has_financial_responsible?: boolean
+          id?: string
+          is_foreign_payment?: boolean
+          name?: string
+          neighborhood?: string | null
+          number?: string | null
+          phone?: string
+          state?: string | null
+          type?: Database["public"]["Enums"]["patient_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -645,6 +757,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "client"
       client_status: "active" | "archived"
+      created_via: "manual" | "invite_link"
       delivery_state: "sent" | "delivered" | "bounced" | "failed"
       email_event_type:
         | "sent"
@@ -660,6 +773,7 @@ export type Database = {
         | "on_time_done"
         | "overdue"
         | "late_done"
+      patient_type: "pf" | "pj"
       upload_state: "pending" | "classified" | "sent" | "error"
     }
     CompositeTypes: {
@@ -790,6 +904,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "client"],
       client_status: ["active", "archived"],
+      created_via: ["manual", "invite_link"],
       delivery_state: ["sent", "delivered", "bounced", "failed"],
       email_event_type: [
         "sent",
@@ -807,6 +922,7 @@ export const Constants = {
         "overdue",
         "late_done",
       ],
+      patient_type: ["pf", "pj"],
       upload_state: ["pending", "classified", "sent", "error"],
     },
   },

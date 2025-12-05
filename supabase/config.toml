@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.update-obligation-statuses]
 verify_jwt = false
+
+[functions.validate-invite-token]
+verify_jwt = false
+
+[functions.register-patient-via-invite]
+verify_jwt = false

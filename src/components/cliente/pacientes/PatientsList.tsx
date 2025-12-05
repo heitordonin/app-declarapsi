@@ -1,11 +1,11 @@
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Patient } from '@/hooks/cliente/usePatientsData';
+import { PatientDisplayModel } from '@/hooks/cliente/usePatientsData';
 import { cn } from '@/lib/utils';
 
 interface PatientsListProps {
-  patients: Patient[];
+  patients: PatientDisplayModel[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   searchQuery: string;

@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
+import CadastroPaciente from "./pages/CadastroPaciente";
 import ContadorLayout from "./pages/contador/ContadorLayout";
 import Obrigacoes from "./pages/contador/Obrigacoes";
 import Relatorios from "./pages/contador/Relatorios";
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/cadastro-paciente" element={<CadastroPaciente />} />
             
             {/* Contador Routes */}
             <Route path="/contador" element={

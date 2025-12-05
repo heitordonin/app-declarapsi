@@ -1,10 +1,10 @@
 import { Mail, Phone, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Patient } from '@/hooks/cliente/usePatientsData';
+import { PatientDisplayModel } from '@/hooks/cliente/usePatientsData';
 
 interface PatientBasicInfoProps {
-  patient: Patient;
+  patient: PatientDisplayModel;
 }
 
 export function PatientBasicInfo({ patient }: PatientBasicInfoProps) {
