@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -90,6 +90,7 @@ export function AddPatientPanel({ open, onOpenChange, onSubmit, onGenerateLink }
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const addressSectionRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
@@ -333,13 +334,25 @@ export function AddPatientPanel({ open, onOpenChange, onSubmit, onGenerateLink }
           </div>
 
           {/* Address Section */}
-          <Collapsible open={addressOpen} onOpenChange={setAddressOpen}>
+          <Collapsible 
+            open={addressOpen} 
+            onOpenChange={(open) => {
+              setAddressOpen(open);
+              if (open) {
+                setTimeout(() => {
+                  addressSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+              }
+            }}
+          >
+            <div ref={addressSectionRef}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" className="w-full justify-between p-0 h-auto hover:bg-transparent">
                 <span className="text-sm font-medium">Endereço (opcional)</span>
                 <ChevronDown className={cn("h-4 w-4 transition-transform", addressOpen && "rotate-180")} />
               </Button>
             </CollapsibleTrigger>
+            </div>
             <CollapsibleContent className="space-y-4 pt-4">
               {/* CEP */}
               <div className="space-y-2">
