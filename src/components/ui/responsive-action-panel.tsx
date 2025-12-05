@@ -93,14 +93,14 @@ export function ResponsiveActionPanel({
   const PanelHeader = (
     <>
       {isMobile ? (
-        <DrawerHeader className="text-left">
-          <DrawerTitle>{title}</DrawerTitle>
-          {description && <DrawerDescription>{description}</DrawerDescription>}
+        <DrawerHeader className="text-left bg-primary text-primary-foreground rounded-t-[10px]">
+          <DrawerTitle className="text-primary-foreground">{title}</DrawerTitle>
+          {description && <DrawerDescription className="text-primary-foreground/80">{description}</DrawerDescription>}
         </DrawerHeader>
       ) : (
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          {description && <SheetDescription>{description}</SheetDescription>}
+        <SheetHeader className="bg-primary text-primary-foreground p-6 pb-4">
+          <SheetTitle className="text-primary-foreground">{title}</SheetTitle>
+          {description && <SheetDescription className="text-primary-foreground/80">{description}</SheetDescription>}
         </SheetHeader>
       )}
     </>
@@ -181,7 +181,7 @@ export function ResponsiveActionPanel({
           side="right"
           className="w-[480px] sm:max-w-[480px] flex flex-col p-0"
         >
-          <div className="p-6 pb-0">{PanelHeader}</div>
+          {PanelHeader}
           {PanelContent}
           {PanelFooter}
         </SheetContent>
