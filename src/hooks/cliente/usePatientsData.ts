@@ -165,6 +165,41 @@ export function usePatientsData() {
     },
   });
 
+  const updatePatientMutation = useMutation({
+    mutationFn: async ({ id, data: formData }: { id: string; data: PatientFormData }) => {
+      const { data, error } = await supabase
+        .from('patients')
+        .update({
+          name: formData.name,
+          type: formData.type,
+          is_foreign_payment: formData.isForeignPayment,
+          document: formData.isForeignPayment ? null : formData.document?.replace(/\D/g, '') || null,
+          email: formData.email,
+          phone: formData.phone.replace(/\D/g, ''),
+          cep: formData.cep?.replace(/\D/g, '') || null,
+          address: formData.address || null,
+          number: formData.number || null,
+          complement: formData.complement || null,
+          neighborhood: formData.neighborhood || null,
+          city: formData.city || null,
+          state: formData.state || null,
+          has_financial_responsible: formData.hasFinancialResponsible,
+          financial_responsible_cpf: formData.hasFinancialResponsible
+            ? formData.financialResponsibleCpf?.replace(/\D/g, '')
+            : null,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+
   const generateInviteLinkMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('generate-patient-invite');
@@ -182,7 +217,10 @@ export function usePatientsData() {
     isLoading,
     createPatient: createPatientMutation.mutateAsync,
     isCreating: createPatientMutation.isPending,
+    updatePatient: updatePatientMutation.mutateAsync,
+    isUpdating: updatePatientMutation.isPending,
     generateInviteLink: generateInviteLinkMutation.mutateAsync,
     isGeneratingLink: generateInviteLinkMutation.isPending,
+    getPatientById: (id: string) => rawPatients.find(p => p.id === id),
   };
 }
