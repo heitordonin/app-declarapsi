@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Patient } from '@/hooks/cliente/usePatientsData';
+import { PatientDisplayModel } from '@/hooks/cliente/usePatientsData';
 
 interface PatientFinancialSummaryProps {
-  patient: Patient;
+  patient: PatientDisplayModel;
 }
 
 function formatCurrency(value: number): string {

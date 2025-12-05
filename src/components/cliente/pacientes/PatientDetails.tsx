@@ -1,12 +1,12 @@
 import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Patient } from '@/hooks/cliente/usePatientsData';
+import { PatientDisplayModel } from '@/hooks/cliente/usePatientsData';
 import { PatientBasicInfo } from './PatientBasicInfo';
 import { PatientFinancialSummary } from './PatientFinancialSummary';
 import { PatientCharges } from './PatientCharges';
 
 interface PatientDetailsProps {
-  patient: Patient;
+  patient: PatientDisplayModel;
   onEdit?: () => void;
   isMobile?: boolean;
 }

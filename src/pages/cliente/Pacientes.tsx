@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { PatientsList } from '@/components/cliente/pacientes/PatientsList';
 import { PatientDetails } from '@/components/cliente/pacientes/PatientDetails';
 import { PatientDetailsMobileHeader } from '@/components/cliente/pacientes/PatientDetailsMobileHeader';
-import { usePatientsData } from '@/hooks/cliente/usePatientsData';
+import { AddPatientPanel } from '@/components/cliente/pacientes/AddPatientPanel';
+import { usePatientsData, PatientDisplayModel } from '@/hooks/cliente/usePatientsData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -12,8 +13,9 @@ export default function Pacientes() {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileView, setMobileView] = useState<'list' | 'details'>('list');
+  const [showAddPanel, setShowAddPanel] = useState(false);
   
-  const { patients } = usePatientsData();
+  const { patients, isLoading, createPatient, generateInviteLink } = usePatientsData();
   const isMobile = useIsMobile();
   
   const filteredPatients = patients.filter((p) => {
@@ -37,6 +39,10 @@ export default function Pacientes() {
     setMobileView('list');
   };
 
+  const handleCreatePatient = async (data: any) => {
+    await createPatient(data);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)]">
       {/* Header - hidden on mobile when viewing details */}
@@ -45,7 +51,7 @@ export default function Pacientes() {
         mobileView === 'details' && isMobile && "hidden"
       )}>
         <h1 className="text-xl font-semibold text-foreground">Pacientes</h1>
-        <Button onClick={() => console.log('Add new patient')}>
+        <Button onClick={() => setShowAddPanel(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
           Novo Paciente
         </Button>
@@ -120,6 +126,14 @@ export default function Pacientes() {
           </div>
         </div>
       </div>
+
+      {/* Add Patient Panel */}
+      <AddPatientPanel
+        open={showAddPanel}
+        onOpenChange={setShowAddPanel}
+        onSubmit={handleCreatePatient}
+        onGenerateLink={generateInviteLink}
+      />
     </div>
   );
 }
