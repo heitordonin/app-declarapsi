@@ -273,6 +273,36 @@ export function AddPatientPanel({ open, onOpenChange, onSubmit, onGenerateLink }
             )}
           </div>
 
+          {/* Financial Responsible */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hasFinancialResponsible"
+                checked={watchHasFinancialResponsible}
+                onCheckedChange={(checked) => form.setValue('hasFinancialResponsible', !!checked)}
+              />
+              <Label htmlFor="hasFinancialResponsible" className="font-normal cursor-pointer">
+                Tem responsável financeiro?
+              </Label>
+            </div>
+
+            {watchHasFinancialResponsible && (
+              <div className="space-y-2">
+                <Label htmlFor="financialResponsibleCpf">CPF do Responsável *</Label>
+                <Input
+                  id="financialResponsibleCpf"
+                  value={form.watch('financialResponsibleCpf') || ''}
+                  onChange={(e) => form.setValue('financialResponsibleCpf', formatCPF(e.target.value))}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                />
+                {form.formState.errors.financialResponsibleCpf && (
+                  <p className="text-sm text-destructive">{form.formState.errors.financialResponsibleCpf.message}</p>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">Email *</Label>
@@ -365,35 +395,6 @@ export function AddPatientPanel({ open, onOpenChange, onSubmit, onGenerateLink }
                 </div>
               </div>
 
-              {/* Financial Responsible */}
-              <div className="space-y-4 pt-2 border-t">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="hasFinancialResponsible"
-                    checked={watchHasFinancialResponsible}
-                    onCheckedChange={(checked) => form.setValue('hasFinancialResponsible', !!checked)}
-                  />
-                  <Label htmlFor="hasFinancialResponsible" className="font-normal cursor-pointer">
-                    Tem responsável financeiro?
-                  </Label>
-                </div>
-
-                {watchHasFinancialResponsible && (
-                  <div className="space-y-2">
-                    <Label htmlFor="financialResponsibleCpf">CPF do Responsável *</Label>
-                    <Input
-                      id="financialResponsibleCpf"
-                      value={form.watch('financialResponsibleCpf') || ''}
-                      onChange={(e) => form.setValue('financialResponsibleCpf', formatCPF(e.target.value))}
-                      placeholder="000.000.000-00"
-                      maxLength={14}
-                    />
-                    {form.formState.errors.financialResponsibleCpf && (
-                      <p className="text-sm text-destructive">{form.formState.errors.financialResponsibleCpf.message}</p>
-                    )}
-                  </div>
-                )}
-              </div>
             </CollapsibleContent>
           </Collapsible>
         </div>
