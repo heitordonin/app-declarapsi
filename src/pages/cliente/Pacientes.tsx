@@ -5,7 +5,8 @@ import { PatientsList } from '@/components/cliente/pacientes/PatientsList';
 import { PatientDetails } from '@/components/cliente/pacientes/PatientDetails';
 import { PatientDetailsMobileHeader } from '@/components/cliente/pacientes/PatientDetailsMobileHeader';
 import { AddPatientPanel } from '@/components/cliente/pacientes/AddPatientPanel';
-import { usePatientsData, PatientDisplayModel } from '@/hooks/cliente/usePatientsData';
+import { EditPatientPanel } from '@/components/cliente/pacientes/EditPatientPanel';
+import { usePatientsData, Patient } from '@/hooks/cliente/usePatientsData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -14,8 +15,10 @@ export default function Pacientes() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileView, setMobileView] = useState<'list' | 'details'>('list');
   const [showAddPanel, setShowAddPanel] = useState(false);
+  const [showEditPanel, setShowEditPanel] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   
-  const { patients, isLoading, createPatient, generateInviteLink } = usePatientsData();
+  const { patients, rawPatients, isLoading, createPatient, updatePatient, generateInviteLink } = usePatientsData();
   const isMobile = useIsMobile();
   
   const filteredPatients = patients.filter((p) => {
@@ -41,6 +44,18 @@ export default function Pacientes() {
 
   const handleCreatePatient = async (data: any) => {
     await createPatient(data);
+  };
+
+  const handleEditPatient = () => {
+    const rawPatient = rawPatients.find(p => p.id === selectedPatientId);
+    if (rawPatient) {
+      setEditingPatient(rawPatient);
+      setShowEditPanel(true);
+    }
+  };
+
+  const handleUpdatePatient = async (id: string, data: any) => {
+    await updatePatient({ id, data });
   };
 
   return (
@@ -74,7 +89,7 @@ export default function Pacientes() {
         <div className="flex w-[65%] lg:w-[70%]">
           {selectedPatient ? (
             <div className="w-full">
-              <PatientDetails patient={selectedPatient} />
+              <PatientDetails patient={selectedPatient} onEdit={handleEditPatient} />
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
@@ -111,7 +126,7 @@ export default function Pacientes() {
                 <PatientDetailsMobileHeader 
                   patientName={selectedPatient.name}
                   onBack={handleBackToList}
-                  onEdit={() => console.log('Edit patient')}
+                  onEdit={handleEditPatient}
                 />
                 <div className="flex-1 overflow-y-auto p-4">
                   <PatientDetails patient={selectedPatient} isMobile />
@@ -133,6 +148,14 @@ export default function Pacientes() {
         onOpenChange={setShowAddPanel}
         onSubmit={handleCreatePatient}
         onGenerateLink={generateInviteLink}
+      />
+
+      {/* Edit Patient Panel */}
+      <EditPatientPanel
+        open={showEditPanel}
+        onOpenChange={setShowEditPanel}
+        patient={editingPatient}
+        onSubmit={handleUpdatePatient}
       />
     </div>
   );
