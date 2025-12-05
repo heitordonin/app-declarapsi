@@ -106,7 +106,11 @@ export function ResponsiveActionPanel({
     </>
   );
 
-  const PanelContent = (
+  const PanelContent = isMobile ? (
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+      {children}
+    </div>
+  ) : (
     <div className="flex-1 min-h-0 overflow-hidden">
       <ScrollArea className="h-full">
         <div className="px-4 pb-4">{children}</div>
