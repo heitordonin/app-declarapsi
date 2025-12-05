@@ -107,9 +107,11 @@ export function ResponsiveActionPanel({
   );
 
   const PanelContent = (
-    <ScrollArea className="flex-1 px-4">
-      <div className="pb-4">{children}</div>
-    </ScrollArea>
+    <div className="flex-1 min-h-0 overflow-hidden">
+      <ScrollArea className="h-full">
+        <div className="px-4 pb-4">{children}</div>
+      </ScrollArea>
+    </div>
   );
 
   const PanelFooter = (
@@ -180,7 +182,7 @@ export function ResponsiveActionPanel({
           className="w-[480px] sm:max-w-[480px] flex flex-col p-0"
         >
           <div className="p-6 pb-0">{PanelHeader}</div>
-          <div className="flex-1 overflow-hidden">{PanelContent}</div>
+          {PanelContent}
           {PanelFooter}
         </SheetContent>
       </Sheet>
