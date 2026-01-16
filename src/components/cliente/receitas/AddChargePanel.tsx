@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FileText } from 'lucide-react';
+import { FileText, Minus, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ const chargeSchema = z.object({
   dueDate: z.date({ required_error: 'Vencimento é obrigatório' }),
   description: z.string().min(1, 'Descrição é obrigatória'),
   value: z.string().min(1, 'Valor é obrigatório'),
+  sessionsCount: z.number().min(1, 'Mínimo de 1 consulta').max(99, 'Máximo de 99 consultas'),
 }).superRefine((data, ctx) => {
   if (data.isPatientPayer === 'no') {
     if (!data.payerCpf || data.payerCpf.replace(/\D/g, '').length === 0) {
@@ -76,6 +77,7 @@ export function AddChargePanel({
       payerCpf: '',
       description: '',
       value: '',
+      sessionsCount: 1,
     },
   });
 
@@ -127,6 +129,7 @@ export function AddChargePanel({
         dueDate: data.dueDate,
         description: data.description,
         value: data.value,
+        sessionsCount: data.sessionsCount,
       });
       form.reset();
       setCpfInputValue('');
@@ -277,6 +280,56 @@ export function AddChargePanel({
           />
           {form.formState.errors.value && (
             <p className="text-sm text-destructive">{form.formState.errors.value.message}</p>
+          )}
+        </div>
+
+        {/* Quantidade de Consultas */}
+        <div className="space-y-2">
+          <Label>Referente a quantas consultas? *</Label>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                const current = form.watch('sessionsCount') || 1;
+                if (current > 1) {
+                  form.setValue('sessionsCount', current - 1, { shouldDirty: true });
+                }
+              }}
+              disabled={form.watch('sessionsCount') <= 1}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Input
+              type="number"
+              min={1}
+              max={99}
+              className="w-20 text-center"
+              value={form.watch('sessionsCount') || 1}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 1;
+                const clamped = Math.min(99, Math.max(1, value));
+                form.setValue('sessionsCount', clamped, { shouldDirty: true });
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                const current = form.watch('sessionsCount') || 1;
+                if (current < 99) {
+                  form.setValue('sessionsCount', current + 1, { shouldDirty: true });
+                }
+              }}
+              disabled={form.watch('sessionsCount') >= 99}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          {form.formState.errors.sessionsCount && (
+            <p className="text-sm text-destructive">{form.formState.errors.sessionsCount.message}</p>
           )}
         </div>
       </div>
