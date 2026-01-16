@@ -115,6 +115,7 @@ export function useExpensesData() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-expenses'] });
       toast.success('Despesa registrada com sucesso!');
     },
     onError: (error) => {
@@ -152,6 +153,7 @@ export function useExpensesData() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-expenses'] });
       toast.success('Despesa atualizada com sucesso!');
     },
     onError: (error) => {
@@ -171,6 +173,7 @@ export function useExpensesData() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-expenses'] });
       toast.success('Despesa excluída com sucesso!');
     },
     onError: (error) => {
