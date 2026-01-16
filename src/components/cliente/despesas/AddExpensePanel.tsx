@@ -211,23 +211,10 @@ export function AddExpensePanel({ open, onOpenChange, onSubmit }: AddExpensePane
             </div>
 
             {watchIsResidentialExpense && (
-              <div className="space-y-2">
-                <Label htmlFor="professionalUsePercentage">% de uso profissional *</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="professionalUsePercentage"
-                    type="number"
-                    min={1}
-                    max={100}
-                    {...form.register('professionalUsePercentage', { valueAsNumber: true })}
-                    className="w-24"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Apenas este percentual será considerado como despesa dedutível
-                </p>
-              </div>
+              <p className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-md border border-blue-200 dark:border-blue-900">
+                Se marcado, será calculado 20% do valor como ajuste residencial. 
+                Apenas este percentual será considerado como despesa dedutível.
+              </p>
             )}
           </div>
         )}
