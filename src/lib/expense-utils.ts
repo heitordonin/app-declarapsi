@@ -1,24 +1,19 @@
 /**
- * Format a number or string to BRL currency format
+ * Format a number to BRL currency display format (for read-only display)
  */
-export function formatCurrency(value: string | number): string {
-  // Remove non-numeric characters except comma and dot
-  const numericValue = typeof value === 'string' 
-    ? value.replace(/[^\d,]/g, '') 
-    : value.toString();
-  
-  // Convert comma to dot for parsing
-  const normalizedValue = numericValue.replace(',', '.');
-  
-  // Parse to number
-  const number = parseFloat(normalizedValue);
-  
-  if (isNaN(number)) {
-    return '';
-  }
-  
-  // Format with Brazilian locale (uses comma as decimal separator)
-  return number.toLocaleString('pt-BR', {
+export function formatCurrency(value: number): string {
+  return value.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * Format a number to BRL currency string for input fields
+ */
+export function formatCurrencyForInput(value: number): string {
+  if (!value && value !== 0) return '';
+  return value.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -26,15 +21,19 @@ export function formatCurrency(value: string | number): string {
 
 /**
  * Parse a BRL currency string to number
+ * Handles both "1.234,56" (Brazilian) and "1234.56" (international) formats
  */
 export function parseCurrencyToNumber(value: string): number {
   if (!value) return 0;
   
-  // Remove thousand separators (dots) and convert decimal separator (comma) to dot
-  const normalizedValue = value.replace(/\./g, '').replace(',', '.');
+  // If has comma, assume Brazilian format (1.234,56)
+  if (value.includes(',')) {
+    const normalized = value.replace(/\./g, '').replace(',', '.');
+    return parseFloat(normalized) || 0;
+  }
   
-  const number = parseFloat(normalizedValue);
-  return isNaN(number) ? 0 : number;
+  // Otherwise, assume international format (1234.56)
+  return parseFloat(value.replace(/[^\d.]/g, '')) || 0;
 }
 
 /**

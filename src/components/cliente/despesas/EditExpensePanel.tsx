@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { ResponsiveActionPanel } from '@/components/ui/responsive-action-panel';
 import { useExpenseCategories } from '@/hooks/cliente/useExpenseCategories';
-import { formatCurrency } from '@/lib/expense-utils';
+import { formatCurrencyForInput } from '@/lib/expense-utils';
 import type { Expense, ExpenseFormData } from '@/hooks/cliente/useExpensesData';
 
 const currentYear = new Date().getFullYear();
@@ -87,9 +88,9 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
       
       form.reset({
         categoryId: category?.id || expense.categoryId || '',
-        value: formatCurrency(expense.originalValue),
+        value: formatCurrencyForInput(expense.originalValue),
         paymentDate: expense.paymentDate,
-        penalty: expense.penalty ? formatCurrency(expense.penalty) : '',
+        penalty: expense.penalty ? formatCurrencyForInput(expense.penalty) : '',
         description: expense.description || '',
         isResidentialExpense: expense.isResidentialExpense || false,
         competencyMonth: expense.competencyMonth || new Date().getMonth() + 1,
@@ -119,15 +120,6 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
     }
   };
 
-  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCurrency(e.target.value);
-    form.setValue('value', formatted);
-  };
-
-  const handlePenaltyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCurrency(e.target.value);
-    form.setValue('penalty', formatted);
-  };
 
   return (
     <ResponsiveActionPanel
@@ -168,11 +160,12 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
         {/* Valor */}
         <div className="space-y-2">
           <Label htmlFor="value">Valor (R$) *</Label>
-          <Input
+          <CurrencyInput
             id="value"
-            inputMode="decimal"
             value={form.watch('value') || ''}
-            onChange={handleValueChange}
+            onValueChange={(values) => {
+              form.setValue('value', values.formattedValue, { shouldDirty: true });
+            }}
             placeholder="0,00"
           />
           {form.formState.errors.value && (
@@ -196,11 +189,12 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
         {/* Multa/Juros */}
         <div className="space-y-2">
           <Label htmlFor="penalty">Multa/Juros (R$)</Label>
-          <Input
+          <CurrencyInput
             id="penalty"
-            inputMode="decimal"
             value={form.watch('penalty') || ''}
-            onChange={handlePenaltyChange}
+            onValueChange={(values) => {
+              form.setValue('penalty', values.formattedValue, { shouldDirty: true });
+            }}
             placeholder="0,00"
           />
         </div>
