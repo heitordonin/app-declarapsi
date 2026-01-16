@@ -16,7 +16,7 @@ import {
 import { ResponsiveActionPanel } from '@/components/ui/responsive-action-panel';
 import { useExpenseCategories } from '@/hooks/cliente/useExpenseCategories';
 import { formatCurrency } from '@/lib/expense-utils';
-import type { Expense } from '@/hooks/cliente/useExpensesData';
+import type { Expense, ExpenseFormData } from '@/hooks/cliente/useExpensesData';
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
@@ -42,12 +42,9 @@ const expenseSchema = z.object({
   penalty: z.string().optional(),
   description: z.string().optional(),
   isResidentialExpense: z.boolean().default(false),
-  professionalUsePercentage: z.number().min(1).max(100).default(20),
   competencyMonth: z.number().optional(),
   competencyYear: z.number().optional(),
 });
-
-export type ExpenseFormData = z.infer<typeof expenseSchema>;
 
 interface EditExpensePanelProps {
   open: boolean;
@@ -69,7 +66,6 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
       penalty: '',
       description: '',
       isResidentialExpense: false,
-      professionalUsePercentage: 20,
       competencyMonth: new Date().getMonth() + 1,
       competencyYear: currentYear,
     },
@@ -85,17 +81,17 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
   // Populate form when expense changes
   useEffect(() => {
     if (expense && categories.length > 0) {
-      // Find category by name (mock data uses category name, not id)
-      const category = categories.find(c => c.name === expense.category);
+      // Find category by id or name
+      const category = categories.find(c => c.id === expense.categoryId) || 
+                       categories.find(c => c.name === expense.category);
       
       form.reset({
-        categoryId: category?.id || '',
+        categoryId: category?.id || expense.categoryId || '',
         value: formatCurrency(expense.originalValue),
         paymentDate: expense.paymentDate,
         penalty: expense.penalty ? formatCurrency(expense.penalty) : '',
         description: expense.description || '',
         isResidentialExpense: expense.isResidentialExpense || false,
-        professionalUsePercentage: expense.professionalUsePercentage || 20,
         competencyMonth: expense.competencyMonth || new Date().getMonth() + 1,
         competencyYear: expense.competencyYear || currentYear,
       });
