@@ -92,12 +92,31 @@ export default function ClienteLayout() {
       if (!user) return null;
       const { data, error } = await supabase
         .from('clients')
-        .select('name, cpf')
+        .select('name, cpf, id')
         .eq('user_id', user.id)
         .single();
       if (error) throw error;
       return data;
     },
+  });
+
+  // Buscar contagem de comunicados não lidos
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unread-communications-count'],
+    queryFn: async () => {
+      if (!client?.id) return 0;
+
+      const { count, error } = await supabase
+        .from('communication_recipients')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .is('viewed_at', null);
+
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: !!client?.id,
+    refetchInterval: 60000, // Atualiza a cada 1 minuto
   });
 
   const formatCpf = (cpf: string) => {
@@ -157,13 +176,14 @@ export default function ClienteLayout() {
                       <div className="pl-4 pb-2">
                         {module.items.map((item) => {
                           const isActive = location.pathname === item.path;
+                          const showUnreadBadge = item.path === '/cliente/comunicados' && unreadCount > 0;
                           return (
                             <Link
                               key={item.path}
                               to={item.path}
                               onClick={handleNavClick}
                               className={cn(
-                                "flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg mx-2 transition-colors",
+                                "flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg mx-2 transition-colors relative",
                                 isActive 
                                   ? "bg-primary/10 text-primary font-medium" 
                                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -171,6 +191,12 @@ export default function ClienteLayout() {
                             >
                               <item.icon className="h-4 w-4" />
                               <span>{item.label}</span>
+                              {showUnreadBadge && (
+                                <span className="absolute right-3 flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                                </span>
+                              )}
                             </Link>
                           );
                         })}
