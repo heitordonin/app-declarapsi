@@ -14,6 +14,7 @@ export interface Charge {
   description: string;
   status: ChargeStatus;
   amount: number;
+  sessions_count: number;
   due_date: string;
   payment_date: string | null;
   health_receipt_issued: boolean;
@@ -29,6 +30,7 @@ export interface ChargeFormData {
   dueDate: Date;
   description: string;
   value: string;
+  sessionsCount: number;
 }
 
 // Helper to parse currency string to number
@@ -68,6 +70,7 @@ async function fetchCharges(): Promise<Charge[]> {
       description,
       status,
       amount,
+      sessions_count,
       due_date,
       payment_date,
       health_receipt_issued,
@@ -90,6 +93,7 @@ async function fetchCharges(): Promise<Charge[]> {
     description: charge.description,
     status: charge.status as ChargeStatus,
     amount: Number(charge.amount),
+    sessions_count: charge.sessions_count,
     due_date: charge.due_date,
     payment_date: charge.payment_date,
     health_receipt_issued: charge.health_receipt_issued,
@@ -118,6 +122,7 @@ async function createChargeInDb({ clientId, data }: CreateChargeParams): Promise
       due_date: format(data.dueDate, 'yyyy-MM-dd'),
       description: data.description,
       amount: parseCurrencyToNumber(data.value),
+      sessions_count: data.sessionsCount,
       status: 'pending',
       health_receipt_issued: false,
     });
@@ -133,6 +138,7 @@ export interface ChargeEditData {
   dueDate: Date;
   description: string;
   value: string;
+  sessionsCount: number;
 }
 
 interface UpdateChargeParams {
@@ -155,6 +161,7 @@ async function updateChargeInDb({ chargeId, clientId, data }: UpdateChargeParams
       due_date: format(data.dueDate, 'yyyy-MM-dd'),
       description: data.description,
       amount: parseCurrencyToNumber(data.value),
+      sessions_count: data.sessionsCount,
     })
     .eq('id', chargeId)
     .eq('client_id', clientId);

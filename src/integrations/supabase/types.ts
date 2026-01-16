@@ -100,6 +100,7 @@ export type Database = {
           patient_id: string
           payer_cpf: string
           payment_date: string | null
+          sessions_count: number
           status: Database["public"]["Enums"]["charge_status"]
           updated_at: string
         }
@@ -115,6 +116,7 @@ export type Database = {
           patient_id: string
           payer_cpf: string
           payment_date?: string | null
+          sessions_count?: number
           status?: Database["public"]["Enums"]["charge_status"]
           updated_at?: string
         }
@@ -130,6 +132,7 @@ export type Database = {
           patient_id?: string
           payer_cpf?: string
           payment_date?: string | null
+          sessions_count?: number
           status?: Database["public"]["Enums"]["charge_status"]
           updated_at?: string
         }
