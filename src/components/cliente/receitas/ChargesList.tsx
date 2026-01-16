@@ -4,9 +4,12 @@ import type { Charge } from '@/hooks/cliente/useChargesData';
 
 interface ChargesListProps {
   charges: Charge[];
+  onMarkAsPaid: (charge: Charge) => void;
+  onEdit: (charge: Charge) => void;
+  onDelete: (chargeId: string) => Promise<void>;
 }
 
-export function ChargesList({ charges }: ChargesListProps) {
+export function ChargesList({ charges, onMarkAsPaid, onEdit, onDelete }: ChargesListProps) {
   if (charges.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -19,13 +22,24 @@ export function ChargesList({ charges }: ChargesListProps) {
     <>
       {/* Desktop: Table */}
       <div className="hidden md:block">
-        <ChargesTable charges={charges} />
+        <ChargesTable 
+          charges={charges}
+          onMarkAsPaid={onMarkAsPaid}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       </div>
 
       {/* Mobile: Cards */}
       <div className="md:hidden space-y-3">
         {charges.map((charge) => (
-          <ChargeCard key={charge.id} charge={charge} />
+          <ChargeCard 
+            key={charge.id} 
+            charge={charge}
+            onMarkAsPaid={onMarkAsPaid}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         ))}
       </div>
     </>
