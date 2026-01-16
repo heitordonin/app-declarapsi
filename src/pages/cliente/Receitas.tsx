@@ -1,27 +1,76 @@
 import { useState } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChargesList } from '@/components/cliente/receitas/ChargesList';
 import { AddChargePanel } from '@/components/cliente/receitas/AddChargePanel';
+import { ChargeFilters, ChargeFiltersValues, initialChargeFilters } from '@/components/cliente/receitas/ChargeFilters';
 import { useChargesData, ChargeFormData } from '@/hooks/cliente/useChargesData';
 import { usePatientsData } from '@/hooks/cliente/usePatientsData';
 import { toast } from 'sonner';
 
+// Helper to parse currency string to number
+const parseCurrencyToNumber = (value: string): number => {
+  if (!value) return 0;
+  const cleanValue = value.replace(/[R$\s.]/g, '').replace(',', '.');
+  return parseFloat(cleanValue) || 0;
+};
+
 export default function Receitas() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddPanel, setShowAddPanel] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<ChargeFiltersValues>(initialChargeFilters);
   
   const { rawPatients, isLoading: isLoadingPatients } = usePatientsData();
   const { charges, createCharge, isLoading } = useChargesData();
 
+  // Apply all filters
   const filteredCharges = charges.filter((charge) => {
+    // Search filter
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = 
       charge.patient_name.toLowerCase().includes(query) ||
       charge.description.toLowerCase().includes(query) ||
-      charge.amount.toString().includes(query)
-    );
+      charge.amount.toString().includes(query);
+
+    if (!matchesSearch) return false;
+
+    // Due date range filter
+    if (filters.dueDateStart) {
+      const chargeDate = new Date(charge.due_date);
+      const startDate = new Date(filters.dueDateStart);
+      if (chargeDate < startDate) return false;
+    }
+
+    if (filters.dueDateEnd) {
+      const chargeDate = new Date(charge.due_date);
+      const endDate = new Date(filters.dueDateEnd);
+      if (chargeDate > endDate) return false;
+    }
+
+    // Value range filter
+    if (filters.valueMin) {
+      const minValue = parseCurrencyToNumber(filters.valueMin);
+      if (charge.amount < minValue) return false;
+    }
+
+    if (filters.valueMax) {
+      const maxValue = parseCurrencyToNumber(filters.valueMax);
+      if (charge.amount > maxValue) return false;
+    }
+
+    // Status filter
+    if (filters.status && charge.status !== filters.status) {
+      return false;
+    }
+
+    // Patient filter
+    if (filters.patientId && charge.patient_id !== filters.patientId) {
+      return false;
+    }
+
+    return true;
   });
 
   const handleCreateCharge = async (data: ChargeFormData) => {
@@ -29,6 +78,13 @@ export default function Receitas() {
     setShowAddPanel(false);
     toast.success('Cobrança registrada com sucesso!');
   };
+
+  const handleClearFilters = () => {
+    setFilters(initialChargeFilters);
+  };
+
+  // Prepare patients list for filters
+  const patientsForFilters = rawPatients.map(p => ({ id: p.id, name: p.name }));
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -51,11 +107,14 @@ export default function Receitas() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button variant="outline" className="md:w-auto w-full">
-          <Filter className="h-4 w-4 mr-2" />
-          <span className="hidden md:inline">Filtros avançados</span>
-          <span className="md:hidden">Filtros</span>
-        </Button>
+        <ChargeFilters
+          open={showFilters}
+          onOpenChange={setShowFilters}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={handleClearFilters}
+          patients={patientsForFilters}
+        />
       </div>
 
       {/* Lista de Cobranças */}
