@@ -29,7 +29,7 @@ export default function Receitas() {
   const [chargeToPay, setChargeToPay] = useState<Charge | null>(null);
   
   const { rawPatients, isLoading: isLoadingPatients } = usePatientsData();
-  const { charges, createCharge, updateCharge, markAsPaid, deleteCharge, isLoading } = useChargesData();
+  const { charges, createCharge, updateCharge, markAsPaid, markAsUnpaid, deleteCharge, isLoading } = useChargesData();
 
   // Apply all filters
   const filteredCharges = charges.filter((charge) => {
@@ -101,6 +101,10 @@ export default function Receitas() {
     await deleteCharge(chargeId);
   };
 
+  const handleMarkAsUnpaid = async (chargeId: string) => {
+    await markAsUnpaid(chargeId);
+  };
+
   const handleClearFilters = () => {
     setFilters(initialChargeFilters);
   };
@@ -153,6 +157,7 @@ export default function Receitas() {
       <ChargesList 
         charges={filteredCharges}
         onMarkAsPaid={openPayDialog}
+        onMarkAsUnpaid={handleMarkAsUnpaid}
         onEdit={openEditPanel}
         onDelete={handleDeleteCharge}
       />

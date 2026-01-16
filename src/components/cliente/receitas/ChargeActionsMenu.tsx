@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreVertical, CheckCircle, Mail, MessageCircle, Pencil, Trash2 } from 'lucide-react';
+import { MoreVertical, CheckCircle, XCircle, Mail, MessageCircle, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,7 @@ import type { Charge } from '@/hooks/cliente/useChargesData';
 interface ChargeActionsMenuProps {
   charge: Charge;
   onMarkAsPaid: (charge: Charge) => void;
+  onMarkAsUnpaid: (chargeId: string) => void;
   onEdit: (charge: Charge) => void;
   onDelete: (chargeId: string) => Promise<void>;
 }
@@ -31,6 +32,7 @@ interface ChargeActionsMenuProps {
 export function ChargeActionsMenu({ 
   charge, 
   onMarkAsPaid, 
+  onMarkAsUnpaid,
   onEdit, 
   onDelete 
 }: ChargeActionsMenuProps) {
@@ -43,6 +45,11 @@ export function ChargeActionsMenu({
 
   const handleWhatsAppReminder = () => {
     toast.info('Esta funcionalidade estará disponível em breve');
+  };
+
+  const handleMarkAsUnpaid = () => {
+    onMarkAsUnpaid(charge.id);
+    toast.success('Pagamento desfeito com sucesso!');
   };
 
   const handleDelete = async () => {
@@ -70,14 +77,17 @@ export function ChargeActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 bg-background">
-          <DropdownMenuItem 
-            onClick={() => onMarkAsPaid(charge)}
-            disabled={isPaid}
-            className={isPaid ? 'opacity-50' : ''}
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Marcar como Pago
-          </DropdownMenuItem>
+          {isPaid ? (
+            <DropdownMenuItem onClick={handleMarkAsUnpaid}>
+              <XCircle className="h-4 w-4 mr-2" />
+              Marcar como Não Pago
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => onMarkAsPaid(charge)}>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Marcar como Pago
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={handleEmailReminder} disabled className="opacity-50">
             <Mail className="h-4 w-4 mr-2" />
             Lembrete Email
@@ -87,7 +97,11 @@ export function ChargeActionsMenu({
             Lembrete WhatsApp
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => onEdit(charge)}>
+          <DropdownMenuItem 
+            onClick={() => onEdit(charge)}
+            disabled={isPaid}
+            className={isPaid ? 'opacity-50 cursor-not-allowed' : ''}
+          >
             <Pencil className="h-4 w-4 mr-2" />
             Editar
           </DropdownMenuItem>

@@ -17,11 +17,12 @@ import { cn } from '@/lib/utils';
 interface ChargesTableProps {
   charges: Charge[];
   onMarkAsPaid: (charge: Charge) => void;
+  onMarkAsUnpaid: (chargeId: string) => void;
   onEdit: (charge: Charge) => void;
   onDelete: (chargeId: string) => Promise<void>;
 }
 
-export function ChargesTable({ charges, onMarkAsPaid, onEdit, onDelete }: ChargesTableProps) {
+export function ChargesTable({ charges, onMarkAsPaid, onMarkAsUnpaid, onEdit, onDelete }: ChargesTableProps) {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -80,6 +81,7 @@ export function ChargesTable({ charges, onMarkAsPaid, onEdit, onDelete }: Charge
                 <ChargeActionsMenu 
                   charge={charge}
                   onMarkAsPaid={onMarkAsPaid}
+                  onMarkAsUnpaid={onMarkAsUnpaid}
                   onEdit={onEdit}
                   onDelete={onDelete}
                 />

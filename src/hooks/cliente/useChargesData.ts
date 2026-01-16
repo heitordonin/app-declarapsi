@@ -189,6 +189,21 @@ async function deleteChargeInDb(chargeId: string): Promise<void> {
   if (error) throw error;
 }
 
+async function markChargeAsUnpaidInDb(chargeId: string): Promise<void> {
+  const clientId = await fetchClientId();
+  
+  const { error } = await supabase
+    .from('charges')
+    .update({
+      status: 'pending',
+      payment_date: null,
+    })
+    .eq('id', chargeId)
+    .eq('client_id', clientId);
+
+  if (error) throw error;
+}
+
 export function useChargesData() {
   const queryClient = useQueryClient();
 
@@ -235,6 +250,15 @@ export function useChargesData() {
     },
   });
 
+  const markAsUnpaidMutation = useMutation({
+    mutationFn: async (chargeId: string) => {
+      return markChargeAsUnpaidInDb(chargeId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] });
+    },
+  });
+
   const createCharge = async (data: ChargeFormData): Promise<void> => {
     await createMutation.mutateAsync(data);
   };
@@ -251,11 +275,16 @@ export function useChargesData() {
     await deleteMutation.mutateAsync(chargeId);
   };
 
+  const markAsUnpaid = async (chargeId: string): Promise<void> => {
+    await markAsUnpaidMutation.mutateAsync(chargeId);
+  };
+
   return {
     charges,
     createCharge,
     updateCharge,
     markAsPaid,
+    markAsUnpaid,
     deleteCharge,
     isLoading,
     error,
