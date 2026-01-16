@@ -5,6 +5,7 @@ import { PeriodFilter } from '@/components/cliente/dashboard/PeriodFilter';
 import { DashboardKPIs } from '@/components/cliente/dashboard/DashboardKPIs';
 import { RevenueExpenseChart } from '@/components/cliente/dashboard/RevenueExpenseChart';
 import { ProfitMarginGauge } from '@/components/cliente/dashboard/ProfitMarginGauge';
+import { DashboardSkeleton } from '@/components/cliente/dashboard/DashboardSkeleton';
 import { useDashboardData } from '@/hooks/cliente/useDashboardData';
 
 export default function Dashboard() {
@@ -25,15 +26,21 @@ export default function Dashboard() {
       
       <PeriodFilter onPeriodChange={handlePeriodChange} />
       
-      <DashboardKPIs data={dashboardData.kpis} />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RevenueExpenseChart 
-          totalRevenue={dashboardData.kpis.totalRevenue} 
-          totalExpenses={dashboardData.kpis.totalExpenses} 
-        />
-        <ProfitMarginGauge value={dashboardData.profitMargin} />
-      </div>
+      {dashboardData.isLoading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          <DashboardKPIs data={dashboardData.kpis} />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <RevenueExpenseChart 
+              totalRevenue={dashboardData.kpis.totalRevenue} 
+              totalExpenses={dashboardData.kpis.totalExpenses} 
+            />
+            <ProfitMarginGauge value={dashboardData.profitMargin} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
