@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { canMarkAsPaidOnDate, getRestrictionMessage, getAllowedPeriodDescription } from '@/lib/charge-period-utils';
 import type { Charge } from '@/hooks/cliente/useChargesData';
 
 interface MarkAsPaidDialogProps {
@@ -41,6 +43,15 @@ export function MarkAsPaidDialog({
   const formattedDueDate = format(parseISO(charge.due_date), 'dd/MM/yyyy', { locale: ptBR });
 
   const handleConfirm = async () => {
+    // Validação do período de apuração
+    if (!canMarkAsPaidOnDate(paymentDate)) {
+      toast.error('Fora do período de apuração', {
+        description: getRestrictionMessage(),
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onConfirm(charge.id, paymentDate);
@@ -49,6 +60,8 @@ export function MarkAsPaidDialog({
       setIsSubmitting(false);
     }
   };
+
+  const allowedPeriod = getAllowedPeriodDescription();
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -68,6 +81,9 @@ export function MarkAsPaidDialog({
               onDateChange={(date) => date && setPaymentDate(date)}
               placeholder="Selecione uma data"
             />
+            <p className="text-xs text-muted-foreground">
+              Período permitido: {allowedPeriod}
+            </p>
           </div>
 
           <div className="rounded-lg bg-muted p-3 space-y-1 text-sm">

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { canModifyPaidCharge, getRestrictionMessage } from '@/lib/charge-period-utils';
 import type { Charge } from '@/hooks/cliente/useChargesData';
 
 interface ChargeActionsMenuProps {
@@ -48,8 +49,30 @@ export function ChargeActionsMenu({
   };
 
   const handleMarkAsUnpaid = () => {
+    // Validar período de apuração
+    if (!canModifyPaidCharge(charge.payment_date)) {
+      toast.error('Fora do período de apuração', {
+        description: getRestrictionMessage(),
+        duration: 5000,
+      });
+      return;
+    }
+    
     onMarkAsUnpaid(charge.id);
     toast.success('Pagamento desfeito com sucesso!');
+  };
+
+  const handleDeleteClick = () => {
+    // Se a cobrança está paga, validar período de apuração
+    if (isPaid && !canModifyPaidCharge(charge.payment_date)) {
+      toast.error('Fora do período de apuração', {
+        description: getRestrictionMessage(),
+        duration: 5000,
+      });
+      return;
+    }
+    
+    setShowDeleteDialog(true);
   };
 
   const handleDelete = async () => {
@@ -107,7 +130,7 @@ export function ChargeActionsMenu({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem 
-            onClick={() => setShowDeleteDialog(true)} 
+            onClick={handleDeleteClick} 
             className="text-destructive focus:text-destructive"
           >
             <Trash2 className="h-4 w-4 mr-2" />
