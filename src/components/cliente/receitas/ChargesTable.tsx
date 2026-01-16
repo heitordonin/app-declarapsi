@@ -48,7 +48,7 @@ export function ChargesTable({ charges }: ChargesTableProps) {
               <TableCell>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span>{charge.patientName}</span>
+                  <span>{charge.patient_name}</span>
                 </div>
               </TableCell>
               <TableCell>{charge.description}</TableCell>
@@ -56,18 +56,18 @@ export function ChargesTable({ charges }: ChargesTableProps) {
                 <ChargeStatusBadge status={charge.status} />
               </TableCell>
               <TableCell className="text-right font-medium">
-                {formatCurrency(charge.value)}
+                {formatCurrency(charge.amount)}
               </TableCell>
               <TableCell
                 className={cn(charge.status === 'overdue' && 'text-red-500')}
               >
-                {formatDate(charge.dueDate)}
+                {formatDate(charge.due_date)}
               </TableCell>
               <TableCell>
-                {charge.paymentDate ? (
+                {charge.payment_date ? (
                   <div className="flex items-center gap-1 text-green-600">
                     <CheckCircle2 className="h-4 w-4" />
-                    {formatDate(charge.paymentDate)}
+                    {formatDate(charge.payment_date)}
                   </div>
                 ) : (
                   <span className="text-muted-foreground">-</span>

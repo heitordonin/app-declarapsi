@@ -13,16 +13,16 @@ export function ChargeCard({ charge }: ChargeCardProps) {
   const formattedValue = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(charge.value);
+  }).format(charge.amount);
 
-  const formattedDueDate = format(parseISO(charge.dueDate), 'dd/MM/yyyy', { locale: ptBR });
+  const formattedDueDate = format(parseISO(charge.due_date), 'dd/MM/yyyy', { locale: ptBR });
 
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-foreground truncate">{charge.patientName}</p>
+            <p className="font-medium text-foreground truncate">{charge.patient_name}</p>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-primary font-semibold">{formattedValue}</span>
               <ChargeStatusBadge status={charge.status} />

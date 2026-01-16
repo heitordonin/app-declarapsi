@@ -112,8 +112,12 @@ export function AddChargePanel({
   const handleSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
+      // Get patient CPF from selected patient
+      const patientCpf = selectedPatient?.document || '';
+      
       await onSubmit({
         patientId: data.patientId,
+        patientCpf,
         isPatientPayer: data.isPatientPayer === 'yes',
         payerCpf: data.isPatientPayer === 'no' ? data.payerCpf : undefined,
         dueDate: data.dueDate,

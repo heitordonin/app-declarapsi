@@ -13,19 +13,14 @@ export default function Receitas() {
   const [showAddPanel, setShowAddPanel] = useState(false);
   
   const { rawPatients, isLoading: isLoadingPatients } = usePatientsData();
-  
-  const getPatientName = (patientId: string) => {
-    return rawPatients.find(p => p.id === patientId)?.name || 'Paciente';
-  };
-  
-  const { charges, createCharge } = useChargesData(getPatientName);
+  const { charges, createCharge, isLoading } = useChargesData();
 
   const filteredCharges = charges.filter((charge) => {
     const query = searchQuery.toLowerCase();
     return (
-      charge.patientName.toLowerCase().includes(query) ||
+      charge.patient_name.toLowerCase().includes(query) ||
       charge.description.toLowerCase().includes(query) ||
-      charge.value.toString().includes(query)
+      charge.amount.toString().includes(query)
     );
   });
 
