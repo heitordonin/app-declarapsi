@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { Plus, Search, Filter, Receipt, Loader2 } from 'lucide-react';
+import { Plus, Search, Receipt, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ExpensesList } from '@/components/cliente/despesas/ExpensesList';
 import { AddExpensePanel } from '@/components/cliente/despesas/AddExpensePanel';
 import { EditExpensePanel } from '@/components/cliente/despesas/EditExpensePanel';
+import { ExpenseFilters, initialFilters, type ExpenseFiltersValues } from '@/components/cliente/despesas/ExpenseFilters';
 import { EmptyState } from '@/components/cliente/EmptyState';
 import { useExpensesData, type Expense, type ExpenseFormData } from '@/hooks/cliente/useExpensesData';
+import { parseCurrencyToNumber } from '@/lib/expense-utils';
 
 export default function Despesas() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<ExpenseFiltersValues>(initialFilters);
   
   const { 
     expenses, 
@@ -23,14 +27,56 @@ export default function Despesas() {
   } = useExpensesData();
 
   const filteredExpenses = expenses.filter((expense) => {
+    // Text search
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = !query || (
       expense.category.toLowerCase().includes(query) ||
       expense.value.toString().includes(query) ||
       expense.description?.toLowerCase().includes(query) ||
       (expense.competencyMonth && expense.competencyYear && 
         `${expense.competencyMonth}/${expense.competencyYear}`.includes(query))
     );
+
+    if (!matchesSearch) return false;
+
+    // Date filter
+    if (filters.dateStart) {
+      const expenseDate = new Date(expense.paymentDate);
+      const filterDate = new Date(filters.dateStart);
+      if (expenseDate < filterDate) return false;
+    }
+    if (filters.dateEnd) {
+      const expenseDate = new Date(expense.paymentDate);
+      const filterDate = new Date(filters.dateEnd);
+      if (expenseDate > filterDate) return false;
+    }
+
+    // Value filter
+    if (filters.valueMin) {
+      const minValue = parseCurrencyToNumber(filters.valueMin);
+      if (expense.originalValue < minValue) return false;
+    }
+    if (filters.valueMax) {
+      const maxValue = parseCurrencyToNumber(filters.valueMax);
+      if (expense.originalValue > maxValue) return false;
+    }
+
+    // Category filter
+    if (filters.categoryId && expense.categoryId !== filters.categoryId) {
+      return false;
+    }
+
+    // Competency filter
+    if (filters.competencyMonth) {
+      const filterMonth = parseInt(filters.competencyMonth);
+      if (expense.competencyMonth !== filterMonth) return false;
+    }
+    if (filters.competencyYear) {
+      const filterYear = parseInt(filters.competencyYear);
+      if (expense.competencyYear !== filterYear) return false;
+    }
+
+    return true;
   });
 
   const handleAddExpense = async (data: ExpenseFormData) => {
@@ -53,6 +99,12 @@ export default function Despesas() {
     await deleteExpense.mutateAsync(id);
   };
 
+  const handleClearFilters = () => {
+    setFilters(initialFilters);
+  };
+
+  const hasActiveFilters = Object.values(filters).some(v => v !== '');
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       {/* Botão Nova Despesa */}
@@ -74,11 +126,13 @@ export default function Despesas() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button variant="outline" className="md:w-auto w-full">
-          <Filter className="h-4 w-4 mr-2" />
-          <span className="hidden md:inline">Filtros avançados</span>
-          <span className="md:hidden">Filtros</span>
-        </Button>
+        <ExpenseFilters
+          open={showFilters}
+          onOpenChange={setShowFilters}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={handleClearFilters}
+        />
       </div>
 
       {/* Loading State */}
@@ -89,7 +143,7 @@ export default function Despesas() {
       )}
 
       {/* Empty State */}
-      {!isLoading && expenses.length === 0 && !searchQuery && (
+      {!isLoading && expenses.length === 0 && !searchQuery && !hasActiveFilters && (
         <EmptyState
           icon={Receipt}
           title="Nenhuma despesa registrada"
@@ -97,10 +151,19 @@ export default function Despesas() {
         />
       )}
 
-      {/* Empty Search Results */}
-      {!isLoading && filteredExpenses.length === 0 && searchQuery && (
+      {/* Empty Search/Filter Results */}
+      {!isLoading && filteredExpenses.length === 0 && (searchQuery || hasActiveFilters) && (
         <div className="text-center py-12 text-muted-foreground">
-          Nenhuma despesa encontrada para "{searchQuery}"
+          <p>Nenhuma despesa encontrada com os filtros aplicados.</p>
+          {hasActiveFilters && (
+            <Button 
+              variant="link" 
+              onClick={handleClearFilters}
+              className="mt-2"
+            >
+              Limpar filtros
+            </Button>
+          )}
         </div>
       )}
 
