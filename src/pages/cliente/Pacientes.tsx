@@ -6,7 +6,9 @@ import { PatientDetails } from '@/components/cliente/pacientes/PatientDetails';
 import { PatientDetailsMobileHeader } from '@/components/cliente/pacientes/PatientDetailsMobileHeader';
 import { AddPatientPanel } from '@/components/cliente/pacientes/AddPatientPanel';
 import { EditPatientPanel } from '@/components/cliente/pacientes/EditPatientPanel';
+import { AddChargePanel } from '@/components/cliente/receitas/AddChargePanel';
 import { usePatientsData, Patient } from '@/hooks/cliente/usePatientsData';
+import { useChargesData, ChargeFormData } from '@/hooks/cliente/useChargesData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -16,9 +18,11 @@ export default function Pacientes() {
   const [mobileView, setMobileView] = useState<'list' | 'details'>('list');
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [showEditPanel, setShowEditPanel] = useState(false);
+  const [showAddChargePanel, setShowAddChargePanel] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   
   const { patients, rawPatients, isLoading, createPatient, updatePatient, generateInviteLink } = usePatientsData();
+  const { createCharge } = useChargesData();
   const isMobile = useIsMobile();
   
   const filteredPatients = patients.filter((p) => {
@@ -58,6 +62,15 @@ export default function Pacientes() {
     await updatePatient({ id, data });
   };
 
+  const handleAddCharge = () => {
+    setShowAddChargePanel(true);
+  };
+
+  const handleCreateCharge = async (data: ChargeFormData) => {
+    await createCharge(data);
+    setShowAddChargePanel(false);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)]">
       {/* Header - hidden on mobile when viewing details */}
@@ -87,9 +100,9 @@ export default function Pacientes() {
         
         {/* Detalhes do Paciente - Lado Direito */}
         <div className="flex w-[65%] lg:w-[70%]">
-          {selectedPatient ? (
+        {selectedPatient ? (
             <div className="w-full">
-              <PatientDetails patient={selectedPatient} onEdit={handleEditPatient} />
+              <PatientDetails patient={selectedPatient} onEdit={handleEditPatient} onAddCharge={handleAddCharge} />
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
@@ -129,7 +142,7 @@ export default function Pacientes() {
                   onEdit={handleEditPatient}
                 />
                 <div className="flex-1 overflow-y-auto p-4">
-                  <PatientDetails patient={selectedPatient} isMobile />
+                  <PatientDetails patient={selectedPatient} isMobile onAddCharge={handleAddCharge} />
                 </div>
               </>
             ) : (
@@ -156,6 +169,15 @@ export default function Pacientes() {
         onOpenChange={setShowEditPanel}
         patient={editingPatient}
         onSubmit={handleUpdatePatient}
+      />
+
+      {/* Add Charge Panel */}
+      <AddChargePanel
+        open={showAddChargePanel}
+        onOpenChange={setShowAddChargePanel}
+        onSubmit={handleCreateCharge}
+        patients={rawPatients}
+        defaultPatientId={selectedPatientId}
       />
     </div>
   );

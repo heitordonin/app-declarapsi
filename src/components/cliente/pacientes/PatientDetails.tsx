@@ -8,6 +8,7 @@ import { PatientCharges } from './PatientCharges';
 interface PatientDetailsProps {
   patient: PatientDisplayModel;
   onEdit?: () => void;
+  onAddCharge?: () => void;
   isMobile?: boolean;
 }
 
@@ -18,7 +19,7 @@ function formatCPF(cpf: string): string {
   return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 }
 
-export function PatientDetails({ patient, onEdit, isMobile }: PatientDetailsProps) {
+export function PatientDetails({ patient, onEdit, onAddCharge, isMobile }: PatientDetailsProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header - hidden on mobile (uses PatientDetailsMobileHeader instead) */}
@@ -51,7 +52,7 @@ export function PatientDetails({ patient, onEdit, isMobile }: PatientDetailsProp
         <PatientCharges
           charges={patient.pendingCharges}
           type="pending"
-          onAddNew={() => console.log('Add new charge')}
+          onAddNew={onAddCharge}
         />
         
         <PatientCharges
