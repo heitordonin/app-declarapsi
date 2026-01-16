@@ -3,8 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ObrigacoesCalendar } from '@/components/obrigacoes/ObrigacoesCalendar';
 import { ObrigacoesInstancesList } from '@/components/obrigacoes/ObrigacoesInstancesList';
-import { ObrigacoesList } from '@/components/obrigacoes/ObrigacoesList';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -65,65 +63,47 @@ export default function Obrigacoes() {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-foreground mb-6">Obrigações</h1>
         
-        <Tabs defaultValue="calendario" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="calendario">Calendário & Instâncias</TabsTrigger>
-            <TabsTrigger value="cadastro">Cadastro de Obrigações</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="calendario">
-            <div className="space-y-6">
-              <div className="w-full">
-                <ObrigacoesCalendar
-                  selectedDate={selectedDate}
-                  onSelectDate={setSelectedDate}
-                  instancesByDate={instancesByDate}
-                />
-              </div>
-              
-              <div className="w-full">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">
-                      {selectedDate
-                        ? `Obrigações - ${selectedDate.toLocaleDateString('pt-BR')}`
-                        : 'Todas as Obrigações'}
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      {selectedDate && (
-                        <button
-                          onClick={() => setSelectedDate(undefined)}
-                          className="text-sm text-primary hover:underline"
-                        >
-                          Limpar filtro
-                        </button>
-                      )}
-                      <Button
-                        onClick={() => generateInstancesMutation.mutate()}
-                        disabled={generateInstancesMutation.isPending}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${generateInstancesMutation.isPending ? 'animate-spin' : ''}`} />
-                        Gerar Instâncias
-                      </Button>
-                    </div>
-                  </div>
-                  <ObrigacoesInstancesList selectedDate={selectedDate} />
+        <div className="space-y-6">
+          <div className="w-full">
+            <ObrigacoesCalendar
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              instancesByDate={instancesByDate}
+            />
+          </div>
+          
+          <div className="w-full">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">
+                  {selectedDate
+                    ? `Obrigações - ${selectedDate.toLocaleDateString('pt-BR')}`
+                    : 'Todas as Obrigações'}
+                </h2>
+                <div className="flex items-center gap-2">
+                  {selectedDate && (
+                    <button
+                      onClick={() => setSelectedDate(undefined)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Limpar filtro
+                    </button>
+                  )}
+                  <Button
+                    onClick={() => generateInstancesMutation.mutate()}
+                    disabled={generateInstancesMutation.isPending}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${generateInstancesMutation.isPending ? 'animate-spin' : ''}`} />
+                    Gerar Instâncias
+                  </Button>
                 </div>
               </div>
+              <ObrigacoesInstancesList selectedDate={selectedDate} />
             </div>
-          </TabsContent>
-
-          <TabsContent value="cadastro">
-            <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Gerencie as obrigações fiscais que serão vinculadas aos clientes.
-              </p>
-              <ObrigacoesList onEdit={() => {}} />
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );
