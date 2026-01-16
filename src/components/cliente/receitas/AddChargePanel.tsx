@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -15,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ResponsiveActionPanel } from '@/components/ui/responsive-action-panel';
+import { StandardDescriptionsDialog } from './StandardDescriptionsDialog';
 import { isValidCPF, formatCPF } from '@/lib/validators';
 import type { Patient } from '@/hooks/cliente/usePatientsData';
 import type { ChargeFormData } from '@/hooks/cliente/useChargesData';
@@ -63,6 +66,7 @@ export function AddChargePanel({
 }: AddChargePanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cpfInputValue, setCpfInputValue] = useState('');
+  const [showDescriptionsDialog, setShowDescriptionsDialog] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(chargeSchema),
@@ -238,11 +242,23 @@ export function AddChargePanel({
         {/* Descrição */}
         <div className="space-y-2">
           <Label htmlFor="description">Descrição *</Label>
-          <Input
-            id="description"
-            {...form.register('description')}
-            placeholder="Ex: Consulta individual"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="description"
+              {...form.register('description')}
+              placeholder="Ex: Consulta individual"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setShowDescriptionsDialog(true)}
+              title="Descrições padrão"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          </div>
           {form.formState.errors.description && (
             <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
           )}
@@ -264,6 +280,14 @@ export function AddChargePanel({
           )}
         </div>
       </div>
+
+      <StandardDescriptionsDialog
+        open={showDescriptionsDialog}
+        onOpenChange={setShowDescriptionsDialog}
+        onSelect={(description) => {
+          form.setValue('description', description, { shouldDirty: true });
+        }}
+      />
     </ResponsiveActionPanel>
   );
 }
