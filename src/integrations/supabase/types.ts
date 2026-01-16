@@ -410,6 +410,69 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          amount: number
+          category_id: string
+          client_id: string
+          competency_month: number | null
+          competency_year: number | null
+          created_at: string
+          deductible_amount: number
+          description: string | null
+          id: string
+          is_residential_expense: boolean
+          payment_date: string
+          penalty: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          client_id: string
+          competency_month?: number | null
+          competency_year?: number | null
+          created_at?: string
+          deductible_amount: number
+          description?: string | null
+          id?: string
+          is_residential_expense?: boolean
+          payment_date: string
+          penalty?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          client_id?: string
+          competency_month?: number | null
+          competency_year?: number | null
+          created_at?: string
+          deductible_amount?: number
+          description?: string | null
+          id?: string
+          is_residential_expense?: boolean
+          payment_date?: string
+          penalty?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obligation_instances: {
         Row: {
           client_id: string
