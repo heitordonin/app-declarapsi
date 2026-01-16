@@ -3,11 +3,22 @@ import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChargesList } from '@/components/cliente/receitas/ChargesList';
-import { useChargesData } from '@/hooks/cliente/useChargesData';
+import { AddChargePanel } from '@/components/cliente/receitas/AddChargePanel';
+import { useChargesData, ChargeFormData } from '@/hooks/cliente/useChargesData';
+import { usePatientsData } from '@/hooks/cliente/usePatientsData';
+import { toast } from 'sonner';
 
 export default function Receitas() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { charges } = useChargesData();
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  
+  const { rawPatients, isLoading: isLoadingPatients } = usePatientsData();
+  
+  const getPatientName = (patientId: string) => {
+    return rawPatients.find(p => p.id === patientId)?.name || 'Paciente';
+  };
+  
+  const { charges, createCharge } = useChargesData(getPatientName);
 
   const filteredCharges = charges.filter((charge) => {
     const query = searchQuery.toLowerCase();
@@ -18,11 +29,17 @@ export default function Receitas() {
     );
   });
 
+  const handleCreateCharge = async (data: ChargeFormData) => {
+    await createCharge(data);
+    setShowAddPanel(false);
+    toast.success('Cobrança registrada com sucesso!');
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       {/* Botão Nova Cobrança */}
       <div className="flex justify-start">
-        <Button>
+        <Button onClick={() => setShowAddPanel(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Cobrança
         </Button>
@@ -48,6 +65,15 @@ export default function Receitas() {
 
       {/* Lista de Cobranças */}
       <ChargesList charges={filteredCharges} />
+
+      {/* Painel de Nova Cobrança */}
+      <AddChargePanel
+        open={showAddPanel}
+        onOpenChange={setShowAddPanel}
+        onSubmit={handleCreateCharge}
+        patients={rawPatients}
+        isLoadingPatients={isLoadingPatients}
+      />
     </div>
   );
 }

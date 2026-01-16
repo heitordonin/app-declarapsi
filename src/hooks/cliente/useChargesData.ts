@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { format } from 'date-fns';
+
 export type ChargeStatus = 'pending' | 'overdue' | 'paid';
 
 export interface Charge {
@@ -9,6 +12,17 @@ export interface Charge {
   value: number;
   dueDate: string;
   paymentDate: string | null;
+  isPatientPayer?: boolean;
+  payerCpf?: string | null;
+}
+
+export interface ChargeFormData {
+  patientId: string;
+  isPatientPayer: boolean;
+  payerCpf?: string;
+  dueDate: Date;
+  description: string;
+  value: string;
 }
 
 const mockCharges: Charge[] = [
@@ -64,9 +78,38 @@ const mockCharges: Charge[] = [
   },
 ];
 
-export function useChargesData() {
+// Helper to parse currency string to number
+function parseCurrencyToNumber(value: string): number {
+  // Remove R$, spaces, dots (thousands separator) and convert comma to dot
+  const cleaned = value.replace(/[R$\s.]/g, '').replace(',', '.');
+  return parseFloat(cleaned) || 0;
+}
+
+export function useChargesData(getPatientName?: (patientId: string) => string) {
+  const [charges, setCharges] = useState<Charge[]>(mockCharges);
+
+  const createCharge = async (data: ChargeFormData): Promise<void> => {
+    const patientName = getPatientName?.(data.patientId) || 'Paciente';
+    
+    const newCharge: Charge = {
+      id: crypto.randomUUID(),
+      patientId: data.patientId,
+      patientName,
+      description: data.description,
+      status: 'pending',
+      value: parseCurrencyToNumber(data.value),
+      dueDate: format(data.dueDate, 'yyyy-MM-dd'),
+      paymentDate: null,
+      isPatientPayer: data.isPatientPayer,
+      payerCpf: data.payerCpf?.replace(/\D/g, '') || null,
+    };
+
+    setCharges(prev => [newCharge, ...prev]);
+  };
+
   return {
-    charges: mockCharges,
+    charges,
+    createCharge,
     isLoading: false,
   };
 }
