@@ -56,6 +56,7 @@ interface AddChargePanelProps {
   onSubmit: (data: ChargeFormData) => Promise<void>;
   patients: Patient[];
   isLoadingPatients?: boolean;
+  defaultPatientId?: string | null;
 }
 
 export function AddChargePanel({ 
@@ -63,7 +64,8 @@ export function AddChargePanel({
   onOpenChange, 
   onSubmit, 
   patients,
-  isLoadingPatients 
+  isLoadingPatients,
+  defaultPatientId
 }: AddChargePanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cpfInputValue, setCpfInputValue] = useState('');
@@ -85,6 +87,13 @@ export function AddChargePanel({
   const watchIsPatientPayer = form.watch('isPatientPayer');
 
   const selectedPatient = patients.find(p => p.id === watchPatientId);
+
+  // Pre-select patient when panel opens with defaultPatientId
+  useEffect(() => {
+    if (open && defaultPatientId) {
+      form.setValue('patientId', defaultPatientId, { shouldDirty: false });
+    }
+  }, [open, defaultPatientId, form]);
 
   // When patient changes or when "no" is selected, pre-fill CPF if available
   useEffect(() => {
