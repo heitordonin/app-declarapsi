@@ -8,11 +8,12 @@ import type { Charge } from '@/hooks/cliente/useChargesData';
 interface ChargeCardProps {
   charge: Charge;
   onMarkAsPaid: (charge: Charge) => void;
+  onMarkAsUnpaid: (chargeId: string) => void;
   onEdit: (charge: Charge) => void;
   onDelete: (chargeId: string) => Promise<void>;
 }
 
-export function ChargeCard({ charge, onMarkAsPaid, onEdit, onDelete }: ChargeCardProps) {
+export function ChargeCard({ charge, onMarkAsPaid, onMarkAsUnpaid, onEdit, onDelete }: ChargeCardProps) {
   const formattedValue = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -37,6 +38,7 @@ export function ChargeCard({ charge, onMarkAsPaid, onEdit, onDelete }: ChargeCar
           <ChargeActionsMenu 
             charge={charge}
             onMarkAsPaid={onMarkAsPaid}
+            onMarkAsUnpaid={onMarkAsUnpaid}
             onEdit={onEdit}
             onDelete={onDelete}
           />
