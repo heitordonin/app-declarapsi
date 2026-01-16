@@ -100,3 +100,12 @@ export function getAllowedPeriodDescription(): string {
   
   return `${monthNames[currentMonth]}/${currentYear}`;
 }
+
+/**
+ * Verifica se pode modificar uma despesa (criar, editar ou excluir)
+ * @param paymentDateStr - Data de pagamento em formato ISO string (YYYY-MM-DD)
+ */
+export function canModifyExpense(paymentDateStr: string): boolean {
+  const paymentDate = new Date(paymentDateStr + 'T00:00:00');
+  return isWithinAllowedPeriod(paymentDate);
+}

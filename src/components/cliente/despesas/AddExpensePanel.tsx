@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format, parse } from 'date-fns';
+import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { ResponsiveActionPanel } from '@/components/ui/responsive-action-panel';
 import { useExpenseCategories } from '@/hooks/cliente/useExpenseCategories';
+import { canModifyExpense, getRestrictionMessage } from '@/lib/charge-period-utils';
 import type { ExpenseFormData } from '@/hooks/cliente/useExpensesData';
 
 const currentYear = new Date().getFullYear();
@@ -86,6 +88,15 @@ export function AddExpensePanel({ open, onOpenChange, onSubmit }: AddExpensePane
   }, [showResidentialSection, form]);
 
   const handleSubmit = async (data: ExpenseFormData) => {
+    // Validar período de apuração
+    if (!canModifyExpense(data.paymentDate)) {
+      toast.error('Fora do período de apuração', {
+        description: getRestrictionMessage(),
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSubmit(data);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { canModifyExpense, getRestrictionMessage } from '@/lib/charge-period-utils';
 import type { Expense } from '@/hooks/cliente/useExpensesData';
 
 interface ExpenseActionsMenuProps {
@@ -28,6 +30,31 @@ interface ExpenseActionsMenuProps {
 
 export function ExpenseActionsMenu({ expense, onEdit, onDelete }: ExpenseActionsMenuProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Verificar se pode modificar baseado na data de pagamento
+  const canModify = canModifyExpense(expense.paymentDate);
+
+  const handleEditClick = () => {
+    if (!canModify) {
+      toast.error('Fora do período de apuração', {
+        description: getRestrictionMessage(),
+        duration: 5000,
+      });
+      return;
+    }
+    onEdit(expense);
+  };
+
+  const handleDeleteClick = () => {
+    if (!canModify) {
+      toast.error('Fora do período de apuração', {
+        description: getRestrictionMessage(),
+        duration: 5000,
+      });
+      return;
+    }
+    setShowDeleteDialog(true);
+  };
 
   const handleConfirmDelete = () => {
     onDelete(expense.id);
@@ -44,14 +71,17 @@ export function ExpenseActionsMenu({ expense, onEdit, onDelete }: ExpenseActions
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40 bg-background">
-          <DropdownMenuItem onClick={() => onEdit(expense)}>
+          <DropdownMenuItem 
+            onClick={handleEditClick}
+            className={!canModify ? 'opacity-50' : ''}
+          >
             <Pencil className="h-4 w-4 mr-2" />
             Editar
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem 
-            onClick={() => setShowDeleteDialog(true)} 
-            className="text-destructive focus:text-destructive"
+            onClick={handleDeleteClick} 
+            className={`text-destructive focus:text-destructive ${!canModify ? 'opacity-50' : ''}`}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Excluir

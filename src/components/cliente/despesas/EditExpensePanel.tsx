@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format, parse } from 'date-fns';
+import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +20,7 @@ import {
 import { ResponsiveActionPanel } from '@/components/ui/responsive-action-panel';
 import { useExpenseCategories } from '@/hooks/cliente/useExpenseCategories';
 import { formatCurrencyForInput } from '@/lib/expense-utils';
+import { canModifyExpense, getRestrictionMessage } from '@/lib/charge-period-utils';
 import type { Expense, ExpenseFormData } from '@/hooks/cliente/useExpensesData';
 
 const currentYear = new Date().getFullYear();
@@ -80,6 +83,9 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
   const showResidentialSection = selectedCategory?.isResidential === true;
   const showCompetencyFields = selectedCategory?.requiresCompetency === true;
 
+  // Verificar se pode editar baseado na data de pagamento da despesa
+  const canEdit = expense ? canModifyExpense(expense.paymentDate) : true;
+
   // Populate form when expense changes
   useEffect(() => {
     if (expense && categories.length > 0) {
@@ -110,6 +116,15 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
   const handleSubmit = async (data: ExpenseFormData) => {
     if (!expense) return;
     
+    // Validar período de apuração (nova data de pagamento)
+    if (!canModifyExpense(data.paymentDate)) {
+      toast.error('Fora do período de apuração', {
+        description: getRestrictionMessage(),
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSubmit(expense.id, data);
@@ -130,10 +145,21 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
       description="Atualize os dados da despesa"
       submitLabel="Salvar Alterações"
       onSubmit={form.handleSubmit(handleSubmit)}
-      isSubmitting={isSubmitting}
+      isSubmitting={isSubmitting || !canEdit}
       isDirty={form.formState.isDirty}
     >
       <div className="space-y-6">
+        {/* Aviso de período bloqueado */}
+        {!canEdit && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="font-medium">Período de apuração encerrado</p>
+              <p className="mt-1">{getRestrictionMessage()}</p>
+            </div>
+          </div>
+        )}
+
         {/* Categoria */}
         <div className="space-y-2">
           <Label htmlFor="categoryId">Categoria *</Label>
