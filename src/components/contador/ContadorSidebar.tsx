@@ -14,7 +14,7 @@ import {
   SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar';
-import logo from '@/assets/logo-declara-psi.png';
+import { cn } from '@/lib/utils';
 
 const navItems = [
   { icon: CalendarDays, label: 'Obrigações', path: '/contador/obrigacoes' },
@@ -35,11 +35,19 @@ export function ContadorSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
-        <img 
-          src={logo} 
-          alt="Declara Psi" 
-          className={`h-auto transition-all duration-200 ${isCollapsed ? 'w-full' : 'w-4/5 mx-auto'}`}
-        />
+        <div className={cn(
+          "flex items-center justify-center transition-all duration-200",
+          isCollapsed ? "px-0" : "px-2"
+        )}>
+          {isCollapsed ? (
+            <span className="text-lg font-bold text-primary">DP</span>
+          ) : (
+            <h2 className="text-xl font-bold">
+              <span className="text-primary">Declara</span>
+              <span className="text-accent">Psi</span>
+            </h2>
+          )}
+        </div>
       </SidebarHeader>
       
       <SidebarContent>
