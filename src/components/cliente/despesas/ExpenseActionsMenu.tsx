@@ -7,20 +7,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import type { Expense } from '@/hooks/cliente/useExpensesData';
 
 interface ExpenseActionsMenuProps {
-  expenseId: string;
+  expense: Expense;
+  onEdit: (expense: Expense) => void;
+  onDelete: (id: string) => void;
 }
 
-export function ExpenseActionsMenu({ expenseId }: ExpenseActionsMenuProps) {
-  const handleEdit = () => {
-    console.log('Editar:', expenseId);
-  };
-
-  const handleDelete = () => {
-    console.log('Excluir:', expenseId);
-  };
-
+export function ExpenseActionsMenu({ expense, onEdit, onDelete }: ExpenseActionsMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -30,12 +25,15 @@ export function ExpenseActionsMenu({ expenseId }: ExpenseActionsMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40 bg-background">
-        <DropdownMenuItem onClick={handleEdit}>
+        <DropdownMenuItem onClick={() => onEdit(expense)}>
           <Pencil className="h-4 w-4 mr-2" />
           Editar
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem 
+          onClick={() => onDelete(expense.id)} 
+          className="text-destructive focus:text-destructive"
+        >
           <Trash2 className="h-4 w-4 mr-2" />
           Excluir
         </DropdownMenuItem>

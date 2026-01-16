@@ -6,9 +6,11 @@ import type { Expense } from '@/hooks/cliente/useExpensesData';
 
 interface ExpenseCardProps {
   expense: Expense;
+  onEdit: (expense: Expense) => void;
+  onDelete: (id: string) => void;
 }
 
-export function ExpenseCard({ expense }: ExpenseCardProps) {
+export function ExpenseCard({ expense, onEdit, onDelete }: ExpenseCardProps) {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -35,7 +37,11 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
               Pago em: {formattedDate}
             </p>
           </div>
-          <ExpenseActionsMenu expenseId={expense.id} />
+          <ExpenseActionsMenu 
+            expense={expense}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         </div>
       </CardContent>
     </Card>

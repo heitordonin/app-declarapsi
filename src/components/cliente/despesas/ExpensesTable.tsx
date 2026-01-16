@@ -13,9 +13,11 @@ import type { Expense } from '@/hooks/cliente/useExpensesData';
 
 interface ExpensesTableProps {
   expenses: Expense[];
+  onEdit: (expense: Expense) => void;
+  onDelete: (id: string) => void;
 }
 
-export function ExpensesTable({ expenses }: ExpensesTableProps) {
+export function ExpensesTable({ expenses, onEdit, onDelete }: ExpensesTableProps) {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -54,7 +56,11 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
               </TableCell>
               <TableCell>{formatDate(expense.paymentDate)}</TableCell>
               <TableCell>
-                <ExpenseActionsMenu expenseId={expense.id} />
+                <ExpenseActionsMenu 
+                  expense={expense}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
               </TableCell>
             </TableRow>
           ))}
