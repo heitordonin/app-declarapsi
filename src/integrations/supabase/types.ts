@@ -366,6 +366,50 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_categories: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_residential: boolean
+          name: string
+          org_id: string
+          requires_competency: boolean
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_residential?: boolean
+          name: string
+          org_id: string
+          requires_competency?: boolean
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_residential?: boolean
+          name?: string
+          org_id?: string
+          requires_competency?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obligation_instances: {
         Row: {
           client_id: string
