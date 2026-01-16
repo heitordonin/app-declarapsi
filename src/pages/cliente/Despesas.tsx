@@ -1,38 +1,45 @@
 import { useState } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Receipt, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ExpensesList } from '@/components/cliente/despesas/ExpensesList';
 import { AddExpensePanel } from '@/components/cliente/despesas/AddExpensePanel';
 import { EditExpensePanel } from '@/components/cliente/despesas/EditExpensePanel';
-import { useExpensesData, type Expense } from '@/hooks/cliente/useExpensesData';
-import type { ExpenseFormData } from '@/components/cliente/despesas/AddExpensePanel';
-import { toast } from 'sonner';
+import { EmptyState } from '@/components/cliente/EmptyState';
+import { useExpensesData, type Expense, type ExpenseFormData } from '@/hooks/cliente/useExpensesData';
 
 export default function Despesas() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [showEditPanel, setShowEditPanel] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  const { expenses } = useExpensesData();
+  
+  const { 
+    expenses, 
+    isLoading, 
+    createExpense, 
+    updateExpense, 
+    deleteExpense 
+  } = useExpensesData();
 
   const filteredExpenses = expenses.filter((expense) => {
     const query = searchQuery.toLowerCase();
     return (
       expense.category.toLowerCase().includes(query) ||
-      expense.value.toString().includes(query)
+      expense.value.toString().includes(query) ||
+      expense.description?.toLowerCase().includes(query) ||
+      (expense.competencyMonth && expense.competencyYear && 
+        `${expense.competencyMonth}/${expense.competencyYear}`.includes(query))
     );
   });
 
   const handleAddExpense = async (data: ExpenseFormData) => {
-    console.log('Nova despesa:', data);
-    toast.success('Despesa registrada com sucesso!');
+    await createExpense.mutateAsync(data);
     setShowAddPanel(false);
   };
 
   const handleEditExpense = async (id: string, data: ExpenseFormData) => {
-    console.log('Editando despesa:', id, data);
-    toast.success('Despesa atualizada com sucesso!');
+    await updateExpense.mutateAsync({ id, data });
     setShowEditPanel(false);
     setEditingExpense(null);
   };
@@ -42,9 +49,8 @@ export default function Despesas() {
     setShowEditPanel(true);
   };
 
-  const handleDeleteExpense = (id: string) => {
-    console.log('Excluir despesa:', id);
-    toast.success('Despesa excluída com sucesso!');
+  const handleDeleteExpense = async (id: string) => {
+    await deleteExpense.mutateAsync(id);
   };
 
   return (
@@ -75,12 +81,37 @@ export default function Despesas() {
         </Button>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && expenses.length === 0 && !searchQuery && (
+        <EmptyState
+          icon={Receipt}
+          title="Nenhuma despesa registrada"
+          description="Registre sua primeira despesa clicando no botão acima."
+        />
+      )}
+
+      {/* Empty Search Results */}
+      {!isLoading && filteredExpenses.length === 0 && searchQuery && (
+        <div className="text-center py-12 text-muted-foreground">
+          Nenhuma despesa encontrada para "{searchQuery}"
+        </div>
+      )}
+
       {/* Lista de Despesas */}
-      <ExpensesList 
-        expenses={filteredExpenses} 
-        onEdit={handleOpenEdit}
-        onDelete={handleDeleteExpense}
-      />
+      {!isLoading && filteredExpenses.length > 0 && (
+        <ExpensesList 
+          expenses={filteredExpenses} 
+          onEdit={handleOpenEdit}
+          onDelete={handleDeleteExpense}
+        />
+      )}
 
       {/* Painéis */}
       <AddExpensePanel

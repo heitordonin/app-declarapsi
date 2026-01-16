@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/select';
 import { ResponsiveActionPanel } from '@/components/ui/responsive-action-panel';
 import { useExpenseCategories } from '@/hooks/cliente/useExpenseCategories';
-import { formatCurrency, parseCurrencyToNumber } from '@/lib/expense-utils';
+import { formatCurrency } from '@/lib/expense-utils';
+import type { ExpenseFormData } from '@/hooks/cliente/useExpensesData';
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
@@ -41,12 +42,9 @@ const expenseSchema = z.object({
   penalty: z.string().optional(),
   description: z.string().optional(),
   isResidentialExpense: z.boolean().default(false),
-  professionalUsePercentage: z.number().min(1).max(100).default(20),
   competencyMonth: z.number().optional(),
   competencyYear: z.number().optional(),
 });
-
-export type ExpenseFormData = z.infer<typeof expenseSchema>;
 
 interface AddExpensePanelProps {
   open: boolean;
@@ -67,7 +65,6 @@ export function AddExpensePanel({ open, onOpenChange, onSubmit }: AddExpensePane
       penalty: '',
       description: '',
       isResidentialExpense: false,
-      professionalUsePercentage: 20,
       competencyMonth: new Date().getMonth() + 1,
       competencyYear: currentYear,
     },
