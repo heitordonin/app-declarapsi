@@ -3,10 +3,17 @@ import { Plus, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ExpensesList } from '@/components/cliente/despesas/ExpensesList';
-import { useExpensesData } from '@/hooks/cliente/useExpensesData';
+import { AddExpensePanel } from '@/components/cliente/despesas/AddExpensePanel';
+import { EditExpensePanel } from '@/components/cliente/despesas/EditExpensePanel';
+import { useExpensesData, type Expense } from '@/hooks/cliente/useExpensesData';
+import type { ExpenseFormData } from '@/components/cliente/despesas/AddExpensePanel';
+import { toast } from 'sonner';
 
 export default function Despesas() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [showEditPanel, setShowEditPanel] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const { expenses } = useExpensesData();
 
   const filteredExpenses = expenses.filter((expense) => {
@@ -17,11 +24,34 @@ export default function Despesas() {
     );
   });
 
+  const handleAddExpense = async (data: ExpenseFormData) => {
+    console.log('Nova despesa:', data);
+    toast.success('Despesa registrada com sucesso!');
+    setShowAddPanel(false);
+  };
+
+  const handleEditExpense = async (id: string, data: ExpenseFormData) => {
+    console.log('Editando despesa:', id, data);
+    toast.success('Despesa atualizada com sucesso!');
+    setShowEditPanel(false);
+    setEditingExpense(null);
+  };
+
+  const handleOpenEdit = (expense: Expense) => {
+    setEditingExpense(expense);
+    setShowEditPanel(true);
+  };
+
+  const handleDeleteExpense = (id: string) => {
+    console.log('Excluir despesa:', id);
+    toast.success('Despesa excluída com sucesso!');
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       {/* Botão Nova Despesa */}
       <div className="flex justify-start">
-        <Button>
+        <Button onClick={() => setShowAddPanel(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Despesa
         </Button>
@@ -46,7 +76,28 @@ export default function Despesas() {
       </div>
 
       {/* Lista de Despesas */}
-      <ExpensesList expenses={filteredExpenses} />
+      <ExpensesList 
+        expenses={filteredExpenses} 
+        onEdit={handleOpenEdit}
+        onDelete={handleDeleteExpense}
+      />
+
+      {/* Painéis */}
+      <AddExpensePanel
+        open={showAddPanel}
+        onOpenChange={setShowAddPanel}
+        onSubmit={handleAddExpense}
+      />
+
+      <EditExpensePanel
+        open={showEditPanel}
+        onOpenChange={(open) => {
+          setShowEditPanel(open);
+          if (!open) setEditingExpense(null);
+        }}
+        expense={editingExpense}
+        onSubmit={handleEditExpense}
+      />
     </div>
   );
 }
