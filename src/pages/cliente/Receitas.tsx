@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChargesList } from '@/components/cliente/receitas/ChargesList';
 import { AddChargePanel } from '@/components/cliente/receitas/AddChargePanel';
+import { EditChargePanel } from '@/components/cliente/receitas/EditChargePanel';
+import { MarkAsPaidDialog } from '@/components/cliente/receitas/MarkAsPaidDialog';
 import { ChargeFilters, ChargeFiltersValues, initialChargeFilters } from '@/components/cliente/receitas/ChargeFilters';
-import { useChargesData, ChargeFormData } from '@/hooks/cliente/useChargesData';
+import { useChargesData, ChargeFormData, ChargeEditData, Charge } from '@/hooks/cliente/useChargesData';
 import { usePatientsData } from '@/hooks/cliente/usePatientsData';
 import { toast } from 'sonner';
 
@@ -19,11 +21,15 @@ const parseCurrencyToNumber = (value: string): number => {
 export default function Receitas() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddPanel, setShowAddPanel] = useState(false);
+  const [showEditPanel, setShowEditPanel] = useState(false);
+  const [showPayDialog, setShowPayDialog] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<ChargeFiltersValues>(initialChargeFilters);
+  const [editingCharge, setEditingCharge] = useState<Charge | null>(null);
+  const [chargeToPay, setChargeToPay] = useState<Charge | null>(null);
   
   const { rawPatients, isLoading: isLoadingPatients } = usePatientsData();
-  const { charges, createCharge, isLoading } = useChargesData();
+  const { charges, createCharge, updateCharge, markAsPaid, deleteCharge, isLoading } = useChargesData();
 
   // Apply all filters
   const filteredCharges = charges.filter((charge) => {
@@ -79,8 +85,34 @@ export default function Receitas() {
     toast.success('Cobrança registrada com sucesso!');
   };
 
+  const handleUpdateCharge = async (chargeId: string, data: ChargeEditData) => {
+    await updateCharge(chargeId, data);
+    setShowEditPanel(false);
+    setEditingCharge(null);
+    toast.success('Cobrança atualizada com sucesso!');
+  };
+
+  const handleMarkAsPaid = async (chargeId: string, paymentDate: Date) => {
+    await markAsPaid(chargeId, paymentDate);
+    toast.success('Pagamento registrado com sucesso!');
+  };
+
+  const handleDeleteCharge = async (chargeId: string) => {
+    await deleteCharge(chargeId);
+  };
+
   const handleClearFilters = () => {
     setFilters(initialChargeFilters);
+  };
+
+  const openEditPanel = (charge: Charge) => {
+    setEditingCharge(charge);
+    setShowEditPanel(true);
+  };
+
+  const openPayDialog = (charge: Charge) => {
+    setChargeToPay(charge);
+    setShowPayDialog(true);
   };
 
   // Prepare patients list for filters
@@ -118,7 +150,12 @@ export default function Receitas() {
       </div>
 
       {/* Lista de Cobranças */}
-      <ChargesList charges={filteredCharges} />
+      <ChargesList 
+        charges={filteredCharges}
+        onMarkAsPaid={openPayDialog}
+        onEdit={openEditPanel}
+        onDelete={handleDeleteCharge}
+      />
 
       {/* Painel de Nova Cobrança */}
       <AddChargePanel
@@ -127,6 +164,24 @@ export default function Receitas() {
         onSubmit={handleCreateCharge}
         patients={rawPatients}
         isLoadingPatients={isLoadingPatients}
+      />
+
+      {/* Painel de Edição */}
+      <EditChargePanel
+        open={showEditPanel}
+        onOpenChange={setShowEditPanel}
+        onSubmit={handleUpdateCharge}
+        charge={editingCharge}
+        patients={rawPatients}
+        isLoadingPatients={isLoadingPatients}
+      />
+
+      {/* Dialog Marcar como Pago */}
+      <MarkAsPaidDialog
+        open={showPayDialog}
+        onOpenChange={setShowPayDialog}
+        charge={chargeToPay}
+        onConfirm={handleMarkAsPaid}
       />
     </div>
   );

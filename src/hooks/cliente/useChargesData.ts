@@ -125,6 +125,70 @@ async function createChargeInDb({ clientId, data }: CreateChargeParams): Promise
   if (error) throw error;
 }
 
+export interface ChargeEditData {
+  patientId: string;
+  patientCpf: string;
+  isPatientPayer: boolean;
+  payerCpf?: string;
+  dueDate: Date;
+  description: string;
+  value: string;
+}
+
+interface UpdateChargeParams {
+  chargeId: string;
+  clientId: string;
+  data: ChargeEditData;
+}
+
+async function updateChargeInDb({ chargeId, clientId, data }: UpdateChargeParams): Promise<void> {
+  const payerCpf = data.isPatientPayer 
+    ? data.patientCpf.replace(/\D/g, '') 
+    : (data.payerCpf?.replace(/\D/g, '') || '');
+
+  const { error } = await supabase
+    .from('charges')
+    .update({
+      patient_id: data.patientId,
+      patient_cpf: data.patientCpf.replace(/\D/g, ''),
+      payer_cpf: payerCpf,
+      due_date: format(data.dueDate, 'yyyy-MM-dd'),
+      description: data.description,
+      amount: parseCurrencyToNumber(data.value),
+    })
+    .eq('id', chargeId)
+    .eq('client_id', clientId);
+
+  if (error) throw error;
+}
+
+async function markChargeAsPaidInDb(chargeId: string, paymentDate: Date): Promise<void> {
+  const clientId = await fetchClientId();
+  
+  const { error } = await supabase
+    .from('charges')
+    .update({
+      status: 'paid',
+      payment_date: format(paymentDate, 'yyyy-MM-dd'),
+    })
+    .eq('id', chargeId)
+    .eq('client_id', clientId);
+
+  if (error) throw error;
+}
+
+async function deleteChargeInDb(chargeId: string): Promise<void> {
+  const clientId = await fetchClientId();
+  
+  const { error } = await supabase
+    .from('charges')
+    .delete()
+    .eq('id', chargeId)
+    .eq('client_id', clientId);
+
+  if (error) throw error;
+}
+
 export function useChargesData() {
   const queryClient = useQueryClient();
 
@@ -143,13 +207,56 @@ export function useChargesData() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ chargeId, data }: { chargeId: string; data: ChargeEditData }) => {
+      const clientId = await fetchClientId();
+      return updateChargeInDb({ chargeId, clientId, data });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] });
+    },
+  });
+
+  const markAsPaidMutation = useMutation({
+    mutationFn: async ({ chargeId, paymentDate }: { chargeId: string; paymentDate: Date }) => {
+      return markChargeAsPaidInDb(chargeId, paymentDate);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (chargeId: string) => {
+      return deleteChargeInDb(chargeId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charges'] });
+    },
+  });
+
   const createCharge = async (data: ChargeFormData): Promise<void> => {
     await createMutation.mutateAsync(data);
+  };
+
+  const updateCharge = async (chargeId: string, data: ChargeEditData): Promise<void> => {
+    await updateMutation.mutateAsync({ chargeId, data });
+  };
+
+  const markAsPaid = async (chargeId: string, paymentDate: Date): Promise<void> => {
+    await markAsPaidMutation.mutateAsync({ chargeId, paymentDate });
+  };
+
+  const deleteCharge = async (chargeId: string): Promise<void> => {
+    await deleteMutation.mutateAsync(chargeId);
   };
 
   return {
     charges,
     createCharge,
+    updateCharge,
+    markAsPaid,
+    deleteCharge,
     isLoading,
     error,
   };
