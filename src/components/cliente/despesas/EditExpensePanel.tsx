@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input } from '@/components/ui/input';
+import { format, parse } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { CurrencyInput } from '@/components/ui/currency-input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -176,10 +177,14 @@ export function EditExpensePanel({ open, onOpenChange, expense, onSubmit }: Edit
         {/* Data do Pagamento */}
         <div className="space-y-2">
           <Label htmlFor="paymentDate">Data do Pagamento *</Label>
-          <Input
-            id="paymentDate"
-            type="date"
-            {...form.register('paymentDate')}
+          <DatePicker
+            date={form.watch('paymentDate') ? parse(form.watch('paymentDate'), 'yyyy-MM-dd', new Date()) : undefined}
+            onDateChange={(date) => {
+              if (date) {
+                form.setValue('paymentDate', format(date, 'yyyy-MM-dd'), { shouldDirty: true });
+              }
+            }}
+            placeholder="Selecione uma data"
           />
           {form.formState.errors.paymentDate && (
             <p className="text-sm text-destructive">{form.formState.errors.paymentDate.message}</p>

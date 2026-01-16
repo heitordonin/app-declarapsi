@@ -2,14 +2,10 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { CurrencyInput } from '@/components/ui/currency-input';
-import { Calendar } from '@/components/ui/calendar';
+import { DatePicker } from '@/components/ui/date-picker';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
@@ -18,13 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { ResponsiveActionPanel } from '@/components/ui/responsive-action-panel';
-import { cn } from '@/lib/utils';
 import { isValidCPF, formatCPF } from '@/lib/validators';
 import type { Patient } from '@/hooks/cliente/usePatientsData';
 import type { ChargeFormData } from '@/hooks/cliente/useChargesData';
@@ -231,32 +221,11 @@ export function AddChargePanel({
         {/* Vencimento */}
         <div className="space-y-2">
           <Label>Vencimento *</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !form.watch('dueDate') && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch('dueDate') 
-                  ? format(form.watch('dueDate'), "dd/MM/yyyy", { locale: ptBR })
-                  : "Selecione uma data"
-                }
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={form.watch('dueDate')}
-                onSelect={(date) => date && form.setValue('dueDate', date, { shouldDirty: true })}
-                locale={ptBR}
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+          <DatePicker
+            date={form.watch('dueDate')}
+            onDateChange={(date) => date && form.setValue('dueDate', date, { shouldDirty: true })}
+            placeholder="Selecione uma data"
+          />
           {form.formState.errors.dueDate && (
             <p className="text-sm text-destructive">{form.formState.errors.dueDate.message}</p>
           )}
