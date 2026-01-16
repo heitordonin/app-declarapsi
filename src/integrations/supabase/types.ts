@@ -55,6 +55,69 @@ export type Database = {
           },
         ]
       }
+      charges: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          description: string
+          due_date: string
+          health_receipt_issued: boolean
+          id: string
+          patient_cpf: string
+          patient_id: string
+          payer_cpf: string
+          payment_date: string | null
+          status: Database["public"]["Enums"]["charge_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          description: string
+          due_date: string
+          health_receipt_issued?: boolean
+          id?: string
+          patient_cpf: string
+          patient_id: string
+          payer_cpf: string
+          payment_date?: string | null
+          status?: Database["public"]["Enums"]["charge_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          description?: string
+          due_date?: string
+          health_receipt_issued?: boolean
+          id?: string
+          patient_cpf?: string
+          patient_id?: string
+          payer_cpf?: string
+          payment_date?: string | null
+          status?: Database["public"]["Enums"]["charge_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "charges_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "charges_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_obligations: {
         Row: {
           active: boolean
@@ -863,6 +926,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "client"
+      charge_status: "pending" | "overdue" | "paid"
       client_status: "active" | "archived"
       created_via: "manual" | "invite_link"
       delivery_state: "sent" | "delivered" | "bounced" | "failed"
@@ -1010,6 +1074,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "client"],
+      charge_status: ["pending", "overdue", "paid"],
       client_status: ["active", "archived"],
       created_via: ["manual", "invite_link"],
       delivery_state: ["sent", "delivered", "bounced", "failed"],
