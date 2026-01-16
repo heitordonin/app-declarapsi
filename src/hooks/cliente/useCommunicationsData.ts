@@ -99,6 +99,7 @@ export function useCommunicationsData() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-communications'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-communications-count'] });
     },
   });
 
