@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Mail, MailOpen } from 'lucide-react';
+import { Mail, MailOpen, Paperclip } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Communication } from '@/hooks/cliente/useCommunicationsData';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ interface CommunicationCardProps {
 
 export function CommunicationCard({ communication, onClick }: CommunicationCardProps) {
   const isUnread = !communication.viewedAt;
+  const hasAttachments = communication.attachments && communication.attachments.length > 0;
 
   return (
     <Card 
@@ -41,9 +42,14 @@ export function CommunicationCard({ communication, onClick }: CommunicationCardP
               )}>
                 {communication.subject}
               </h3>
-              {isUnread && (
-                <span className="flex-shrink-0 h-2 w-2 rounded-full bg-primary" />
-              )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {hasAttachments && (
+                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                )}
+                {isUnread && (
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                )}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {format(new Date(communication.sentAt), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}

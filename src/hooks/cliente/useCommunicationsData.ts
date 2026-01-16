@@ -1,38 +1,111 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface CommunicationAttachment {
+  name: string;
+  path: string;
+  size: number;
+}
+
 export interface Communication {
-  id: string;
+  id: string;                    // id do communication_recipient
+  communicationId: string;       // id do communication
   subject: string;
   message: string;
   sentAt: string;
   viewedAt: string | null;
+  attachments: CommunicationAttachment[];
 }
 
-const mockCommunications: Communication[] = [
-  {
-    id: '1',
-    subject: 'Atualização de Documentos Fiscais',
-    message: '<p>Prezado(a) cliente,</p><p>Informamos que os documentos fiscais referentes ao mês de novembro já estão disponíveis para consulta.</p><p>Por favor, acesse a área de documentos para visualizá-los.</p><p>Atenciosamente,<br/>Equipe Contábil</p>',
-    sentAt: '2025-12-01T10:30:00',
-    viewedAt: '2025-12-01T14:00:00',
-  },
-  {
-    id: '2',
-    subject: 'Lembrete: Prazo de Entrega IR',
-    message: '<p>Prezado(a) cliente,</p><p>Gostaríamos de lembrar que o prazo para entrega da documentação do Imposto de Renda está se aproximando.</p><p>Solicitamos que envie os documentos necessários até o dia 15 deste mês.</p><p>Atenciosamente,<br/>Equipe Contábil</p>',
-    sentAt: '2025-11-28T09:00:00',
-    viewedAt: null,
-  },
-  {
-    id: '3',
-    subject: 'Novos Serviços Disponíveis',
-    message: '<p>Prezado(a) cliente,</p><p>Temos o prazer de informar que novos serviços estão disponíveis em nossa plataforma:</p><ul><li>Consultoria tributária online</li><li>Análise de crédito</li><li>Planejamento financeiro</li></ul><p>Entre em contato para mais informações.</p><p>Atenciosamente,<br/>Equipe Contábil</p>',
-    sentAt: '2025-11-20T15:45:00',
-    viewedAt: '2025-11-21T08:30:00',
-  },
-];
-
 export function useCommunicationsData() {
+  const queryClient = useQueryClient();
+
+  const { data: communications = [], isLoading, error } = useQuery({
+    queryKey: ['client-communications'],
+    queryFn: async () => {
+      // 1. Buscar user logado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // 2. Buscar client_id do usuário
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (clientError || !clientData) return [];
+
+      // 3. Buscar comunicados via communication_recipients
+      const { data, error } = await supabase
+        .from('communication_recipients')
+        .select(`
+          id,
+          viewed_at,
+          communication:communications(
+            id,
+            subject,
+            message,
+            sent_at,
+            attachments
+          )
+        `)
+        .eq('client_id', clientData.id)
+        .order('sent_at', { foreignTable: 'communications', ascending: false });
+
+      if (error) throw error;
+
+      // 4. Mapear para interface Communication
+      return (data || [])
+        .filter((item) => item.communication) // Filtra itens sem comunicação
+        .map((item) => {
+          const comm = item.communication as unknown as {
+            id: string;
+            subject: string;
+            message: string;
+            sent_at: string;
+            attachments: unknown;
+          };
+          
+          // Parseia attachments de forma segura
+          let attachments: CommunicationAttachment[] = [];
+          if (Array.isArray(comm.attachments)) {
+            attachments = comm.attachments as CommunicationAttachment[];
+          }
+          
+          return {
+            id: item.id,
+            communicationId: comm.id,
+            subject: comm.subject,
+            message: comm.message,
+            sentAt: comm.sent_at,
+            viewedAt: item.viewed_at,
+            attachments,
+          };
+        });
+    },
+  });
+
+  // Mutation para marcar como lido
+  const markAsViewedMutation = useMutation({
+    mutationFn: async (recipientId: string) => {
+      const { error } = await supabase
+        .from('communication_recipients')
+        .update({ viewed_at: new Date().toISOString() })
+        .eq('id', recipientId)
+        .is('viewed_at', null);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-communications'] });
+    },
+  });
+
   return {
-    communications: mockCommunications,
-    isLoading: false,
+    communications,
+    isLoading,
+    error,
+    markAsViewed: markAsViewedMutation.mutate,
   };
 }

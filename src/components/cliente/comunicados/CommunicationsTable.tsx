@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Mail, MailOpen } from 'lucide-react';
+import { Mail, MailOpen, Paperclip } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -24,6 +24,7 @@ export function CommunicationsTable({ communications, onSelect }: Communications
         <TableRow>
           <TableHead className="w-[40px]"></TableHead>
           <TableHead>ASSUNTO</TableHead>
+          <TableHead className="w-[100px]">ANEXOS</TableHead>
           <TableHead>ENVIADO EM</TableHead>
           <TableHead>STATUS</TableHead>
         </TableRow>
@@ -31,6 +32,7 @@ export function CommunicationsTable({ communications, onSelect }: Communications
       <TableBody>
         {communications.map((communication) => {
           const isUnread = !communication.viewedAt;
+          const hasAttachments = communication.attachments && communication.attachments.length > 0;
           
           return (
             <TableRow 
@@ -47,6 +49,14 @@ export function CommunicationsTable({ communications, onSelect }: Communications
               </TableCell>
               <TableCell className={cn(isUnread && 'font-semibold')}>
                 {communication.subject}
+              </TableCell>
+              <TableCell>
+                {hasAttachments && (
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Paperclip className="h-4 w-4" />
+                    <span className="text-xs">{communication.attachments.length}</span>
+                  </div>
+                )}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {format(new Date(communication.sentAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { CommunicationsList } from '@/components/cliente/comunicados/CommunicationsList';
 import { ViewCommunicationDialog } from '@/components/cliente/comunicados/ViewCommunicationDialog';
@@ -8,7 +8,7 @@ import { useCommunicationsData, type Communication } from '@/hooks/cliente/useCo
 export default function Comunicados() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCommunication, setSelectedCommunication] = useState<Communication | null>(null);
-  const { communications } = useCommunicationsData();
+  const { communications, isLoading, markAsViewed } = useCommunicationsData();
 
   const filteredCommunications = useMemo(() => {
     if (!searchQuery) return communications;
@@ -35,17 +35,25 @@ export default function Comunicados() {
         />
       </div>
 
-      {/* Communications List */}
-      <CommunicationsList 
-        communications={filteredCommunications}
-        onSelect={setSelectedCommunication}
-      />
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        /* Communications List */
+        <CommunicationsList 
+          communications={filteredCommunications}
+          onSelect={setSelectedCommunication}
+        />
+      )}
 
       {/* View Dialog */}
       <ViewCommunicationDialog
         communication={selectedCommunication}
         open={!!selectedCommunication}
         onOpenChange={(open) => !open && setSelectedCommunication(null)}
+        onMarkAsViewed={markAsViewed}
       />
     </div>
   );
