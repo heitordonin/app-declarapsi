@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Filter, CalendarIcon, X } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
+import { DatePicker } from '@/components/ui/date-picker';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import {
   Select,
@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/drawer';
 import { useExpenseCategories } from '@/hooks/cliente/useExpenseCategories';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
 
 // Generate competency options (last 24 months)
 const generateCompetencyOptions = () => {
@@ -145,63 +144,21 @@ export function ExpenseFilters({
       <div className="space-y-3">
         <Label className="text-sm font-medium">Data de Pagamento</Label>
         <div className="flex items-center gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "flex-1 justify-start text-left font-normal",
-                  !filters.dateStart && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {filters.dateStart 
-                  ? format(parseDate(filters.dateStart)!, "dd/MM/yyyy", { locale: ptBR }) 
-                  : "Data inicial"
-                }
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={parseDate(filters.dateStart)}
-                onSelect={(date) => handleDateSelect('dateStart', date)}
-                locale={ptBR}
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-
+          <div className="flex-1">
+            <DatePicker
+              date={parseDate(filters.dateStart)}
+              onDateChange={(date) => handleDateSelect('dateStart', date)}
+              placeholder="Data inicial"
+            />
+          </div>
           <span className="text-muted-foreground text-sm">até</span>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "flex-1 justify-start text-left font-normal",
-                  !filters.dateEnd && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {filters.dateEnd 
-                  ? format(parseDate(filters.dateEnd)!, "dd/MM/yyyy", { locale: ptBR }) 
-                  : "Data final"
-                }
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={parseDate(filters.dateEnd)}
-                onSelect={(date) => handleDateSelect('dateEnd', date)}
-                locale={ptBR}
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex-1">
+            <DatePicker
+              date={parseDate(filters.dateEnd)}
+              onDateChange={(date) => handleDateSelect('dateEnd', date)}
+              placeholder="Data final"
+            />
+          </div>
         </div>
       </div>
 
