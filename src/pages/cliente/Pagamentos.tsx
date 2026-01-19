@@ -1,23 +1,40 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MonthSelector } from '@/components/cliente/pagamentos/MonthSelector';
 import { PaymentCard } from '@/components/cliente/pagamentos/PaymentCard';
 import { usePaymentsData } from '@/hooks/cliente/usePaymentsData';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
 export default function Pagamentos() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(format(new Date(), 'yyyy-MM'));
-  const { payments } = usePaymentsData();
+
+  // Get client ID
+  const { data: client } = useQuery({
+    queryKey: ['client-data'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+  });
+
+  const { payments, isLoading, downloadDocument } = usePaymentsData(client?.id);
 
   const filteredPayments = useMemo(() => {
     return payments.filter((payment) => {
-      // Filter by month
-      if (selectedMonth) {
-        const paymentMonth = format(new Date(payment.dueDate), 'yyyy-MM');
-        if (paymentMonth !== selectedMonth) return false;
+      // Filter by month (using competence)
+      if (selectedMonth && payment.competence !== selectedMonth) {
+        return false;
       }
 
       // Filter by search
@@ -25,7 +42,8 @@ export default function Pagamentos() {
         const query = searchQuery.toLowerCase();
         return (
           payment.title.toLowerCase().includes(query) ||
-          payment.value.toString().includes(query)
+          payment.fileName.toLowerCase().includes(query) ||
+          (payment.value?.toString().includes(query) ?? false)
         );
       }
 
@@ -33,11 +51,22 @@ export default function Pagamentos() {
     });
   }, [payments, selectedMonth, searchQuery]);
 
+  const newPaymentsCount = useMemo(() => {
+    return payments.filter(p => p.isNew).length;
+  }, [payments]);
+
   return (
     <div className="p-4 md:p-6 space-y-4">
       {/* Header with filter icon */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">A pagar</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground">A pagar</h1>
+          {newPaymentsCount > 0 && (
+            <span className="bg-accent text-accent-foreground text-xs font-medium px-2 py-0.5 rounded-full">
+              {newPaymentsCount} {newPaymentsCount === 1 ? 'novo' : 'novos'}
+            </span>
+          )}
+        </div>
         <Button variant="ghost" size="icon">
           <Filter className="h-5 w-5" />
         </Button>
@@ -70,18 +99,29 @@ export default function Pagamentos() {
         </span>
       </div>
 
-      {/* Payments List */}
-      <div className="space-y-3">
-        {filteredPayments.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            Nenhum pagamento encontrado
-          </div>
-        ) : (
-          filteredPayments.map((payment) => (
-            <PaymentCard key={payment.id} payment={payment} />
-          ))
-        )}
-      </div>
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        /* Payments List */
+        <div className="space-y-3">
+          {filteredPayments.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Nenhum pagamento encontrado
+            </div>
+          ) : (
+            filteredPayments.map((payment) => (
+              <PaymentCard 
+                key={payment.id} 
+                payment={payment}
+                onDownload={downloadDocument}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

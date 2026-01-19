@@ -41,6 +41,26 @@ export default function ClienteLayout() {
     refetchInterval: 60000,
   });
 
+  // Buscar contagem de documentos novos (não visualizados)
+  const { data: newDocumentsCount = 0 } = useQuery({
+    queryKey: ['new-documents-count'],
+    queryFn: async () => {
+      if (!client?.id) return 0;
+
+      const { count, error } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .eq('delivery_state', 'sent')
+        .is('deleted_at', null);
+
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: !!client?.id,
+    refetchInterval: 60000,
+  });
+
   const formatCpf = (cpf: string) => {
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   };
@@ -48,7 +68,7 @@ export default function ClienteLayout() {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background">
-        <ClienteSidebar unreadCount={unreadCount} />
+        <ClienteSidebar unreadCount={unreadCount} newDocumentsCount={newDocumentsCount} />
         
         <main className="flex-1 overflow-auto">
           <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
