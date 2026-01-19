@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isBefore, startOfDay } from 'date-fns';
 
-export type PaymentStatus = 'pending' | 'overdue';
+export type PaymentStatus = 'pending' | 'viewed' | 'overdue';
 
 export interface Payment {
   id: string;
@@ -15,7 +15,15 @@ export interface Payment {
   filePath: string;
   fileName: string;
   competence: string;
+  viewedAt: string | null;
 }
+
+const getPaymentStatus = (dueAt: Date, viewedAt: string | null): PaymentStatus => {
+  const today = startOfDay(new Date());
+  if (isBefore(dueAt, today)) return 'overdue';
+  if (viewedAt) return 'viewed';
+  return 'pending';
+};
 
 export function usePaymentsData(clientId?: string) {
   const queryClient = useQueryClient();
@@ -36,6 +44,7 @@ export function usePaymentsData(clientId?: string) {
           delivered_at,
           delivery_state,
           competence,
+          viewed_at,
           obligation:obligations(name)
         `)
         .eq('client_id', clientId)
@@ -44,23 +53,21 @@ export function usePaymentsData(clientId?: string) {
 
       if (error) throw error;
 
-      const today = startOfDay(new Date());
-
       return (data || []).map((doc): Payment => {
         const dueDate = new Date(doc.due_at);
-        const isOverdue = isBefore(dueDate, today);
         
         return {
           id: doc.id,
           title: doc.obligation?.name || doc.file_name,
           value: doc.amount,
           dueDate: doc.due_at,
-          status: isOverdue ? 'overdue' : 'pending',
+          status: getPaymentStatus(dueDate, doc.viewed_at),
           deliveredAt: doc.delivered_at,
-          isNew: doc.delivery_state === 'sent',
+          isNew: doc.delivery_state === 'sent' && !doc.viewed_at,
           filePath: doc.file_path,
           fileName: doc.file_name,
           competence: doc.competence,
+          viewedAt: doc.viewed_at,
         };
       });
     },
@@ -71,9 +78,11 @@ export function usePaymentsData(clientId?: string) {
     mutationFn: async (documentId: string) => {
       const { error } = await supabase
         .from('documents')
-        .update({ delivery_state: 'delivered' })
-        .eq('id', documentId)
-        .eq('delivery_state', 'sent');
+        .update({ 
+          delivery_state: 'delivered',
+          viewed_at: new Date().toISOString()
+        })
+        .eq('id', documentId);
 
       if (error) throw error;
     },

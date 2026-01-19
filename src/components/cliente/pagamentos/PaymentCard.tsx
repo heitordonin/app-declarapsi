@@ -16,6 +16,7 @@ interface PaymentCardProps {
 
 const statusConfig = {
   pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+  viewed: { label: 'Visualizado', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
   overdue: { label: 'Vencido', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
 };
 
