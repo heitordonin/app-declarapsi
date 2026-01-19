@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { STATUS_CONFIG, ObligationStatus } from '@/lib/obligation-status-utils';
+import { STATUS_CONFIG, ObligationStatus, getEffectiveStatus } from '@/lib/obligation-status-utils';
 
 interface Instance {
   id: string;
@@ -59,7 +59,12 @@ export function InstancesTable({ data }: InstancesTableProps) {
             </TableHeader>
             <TableBody>
               {data.map((instance) => {
-                const statusInfo = STATUS_CONFIG[instance.status as ObligationStatus] || {
+                // Calcular status efetivo em tempo real
+                const effectiveStatus = getEffectiveStatus(
+                  instance.status as ObligationStatus,
+                  instance.internal_target_at
+                );
+                const statusInfo = STATUS_CONFIG[effectiveStatus] || {
                   label: instance.status,
                   badge: 'bg-muted text-muted-foreground',
                 };
