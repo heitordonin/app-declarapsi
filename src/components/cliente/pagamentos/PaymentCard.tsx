@@ -23,10 +23,12 @@ export function PaymentCard({ payment, onDownload }: PaymentCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const config = statusConfig[payment.status];
   
-  const timeAgo = formatDistanceToNow(new Date(payment.deliveredAt), {
-    addSuffix: true,
-    locale: ptBR,
-  });
+  const deliveredDate = payment.deliveredAt ? new Date(payment.deliveredAt) : null;
+  const isValidDate = deliveredDate && !isNaN(deliveredDate.getTime());
+  
+  const timeAgo = isValidDate
+    ? formatDistanceToNow(deliveredDate, { addSuffix: true, locale: ptBR })
+    : '';
 
   const handleDownload = async () => {
     setIsDownloading(true);
