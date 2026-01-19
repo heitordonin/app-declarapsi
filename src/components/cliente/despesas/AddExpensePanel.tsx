@@ -269,6 +269,14 @@ export function AddExpensePanel({ open, onOpenChange, onSubmit }: AddExpensePane
             </div>
           </div>
         )}
+
+        {/* Disclaimer */}
+        <div className="p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+          <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+            Ao registrar você confirma que essa despesa é considerada indispensável 
+            para o exercício da atividade e possui o devido comprovante fiscal.
+          </p>
+        </div>
       </div>
     </ResponsiveActionPanel>
   );
