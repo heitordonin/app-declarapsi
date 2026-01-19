@@ -15,18 +15,21 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Starting obligation status update...');
+    console.log('Starting obligation status update based on internal_target_at...');
 
     const now = new Date();
+    const nowStr = now.toISOString().split('T')[0];
     const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const in48HoursStr = in48Hours.toISOString().split('T')[0];
 
-    // 1. Atualizar pending → due_48h (quando faltam 48h ou menos)
+    // 1. Atualizar pending → due_48h 
+    // Quando prazo interno está a 48h ou menos (mas ainda não passou)
     const { data: updatedToDue48h, error: error1 } = await supabase
       .from('obligation_instances')
       .update({ status: 'due_48h' })
       .eq('status', 'pending')
-      .lte('due_at', in48Hours.toISOString().split('T')[0])
-      .gt('due_at', now.toISOString().split('T')[0])
+      .lte('internal_target_at', in48HoursStr)
+      .gt('internal_target_at', nowStr)
       .select();
 
     if (error1) {
@@ -36,12 +39,13 @@ Deno.serve(async (req) => {
 
     console.log(`Updated ${updatedToDue48h?.length || 0} instances to due_48h`);
 
-    // 2. Atualizar pending/due_48h → overdue (quando passou da data)
+    // 2. Atualizar pending/due_48h → overdue 
+    // Quando prazo interno já passou e não foi concluída
     const { data: updatedToOverdue, error: error2 } = await supabase
       .from('obligation_instances')
       .update({ status: 'overdue' })
       .in('status', ['pending', 'due_48h'])
-      .lt('due_at', now.toISOString().split('T')[0])
+      .lt('internal_target_at', nowStr)
       .select();
 
     if (error2) {
