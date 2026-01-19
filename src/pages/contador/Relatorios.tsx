@@ -7,22 +7,67 @@ import { KPICard } from '@/components/relatorios/KPICard';
 import { StatusEvolutionChart } from '@/components/relatorios/StatusEvolutionChart';
 import { ClientComparisonChart } from '@/components/relatorios/ClientComparisonChart';
 import { InstancesTable } from '@/components/relatorios/InstancesTable';
-import { format, subMonths } from 'date-fns';
+import { format, subMonths, endOfMonth, startOfMonth, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Clock, AlertCircle, TrendingUp } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+
+// Helper function to get date range for a month
+function getMonthRange(yearMonth: string) {
+  const [year, month] = yearMonth.split('-').map(Number);
+  const firstDayDate = new Date(year, month - 1, 1); // month is 0-indexed in JS Date
+  const lastDayDate = endOfMonth(firstDayDate);
+  
+  return {
+    firstDay: format(firstDayDate, 'yyyy-MM-dd'),
+    lastDay: format(lastDayDate, 'yyyy-MM-dd'),
+  };
+}
+
+function ReportsSkeleton() {
+  return (
+    <div className="p-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-10 w-48" />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-3 w-32 mt-2" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[300px] w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function Relatorios() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
 
-  // Estatísticas gerais
+  // Estatísticas gerais - usando internal_target_at
   const { data: generalStats, isLoading: loadingGeneral } = useQuery({
     queryKey: ['general-stats', selectedMonth],
     queryFn: async () => {
-      // Calcular range de datas para o mês selecionado
-      const [year, month] = selectedMonth.split('-');
-      const firstDay = `${year}-${month}-01`;
-      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
-      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
+      const { firstDay, lastDay } = getMonthRange(selectedMonth);
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -30,8 +75,8 @@ export default function Relatorios() {
           status,
           client:clients!inner(org_id)
         `)
-        .gte('due_at', firstDay)
-        .lt('due_at', lastDay);
+        .gte('internal_target_at', firstDay)
+        .lte('internal_target_at', lastDay);
 
       if (error) throw error;
 
@@ -48,19 +93,20 @@ export default function Relatorios() {
     },
   });
 
-  // Evolução temporal (últimos 6 meses)
+  // Evolução temporal (últimos 6 meses a partir do mês selecionado)
   const { data: evolutionData } = useQuery({
-    queryKey: ['evolution-stats'],
+    queryKey: ['evolution-stats', selectedMonth],
     queryFn: async () => {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const selectedDate = new Date(year, month - 1, 1);
+      
       const months = Array.from({ length: 6 }, (_, i) => {
-        const date = subMonths(new Date(), 5 - i);
-        const [year, month] = format(date, 'yyyy-MM').split('-');
-        const firstDay = `${year}-${month}-01`;
-        const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
-        const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
+        const date = subMonths(selectedDate, 5 - i);
+        const monthStr = format(date, 'yyyy-MM');
+        const { firstDay, lastDay } = getMonthRange(monthStr);
         
         return {
-          value: format(date, 'yyyy-MM'),
+          value: monthStr,
           firstDay,
           lastDay,
           display: format(date, "MMM/yy", { locale: ptBR }),
@@ -75,8 +121,8 @@ export default function Relatorios() {
               status,
               client:clients!inner(org_id)
             `)
-            .gte('due_at', month.firstDay)
-            .lt('due_at', month.lastDay);
+            .gte('internal_target_at', month.firstDay)
+            .lte('internal_target_at', month.lastDay);
 
           if (error) throw error;
 
@@ -100,10 +146,7 @@ export default function Relatorios() {
   const { data: clientComparison } = useQuery({
     queryKey: ['client-comparison', selectedMonth],
     queryFn: async () => {
-      const [year, month] = selectedMonth.split('-');
-      const firstDay = `${year}-${month}-01`;
-      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
-      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
+      const { firstDay, lastDay } = getMonthRange(selectedMonth);
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -111,8 +154,8 @@ export default function Relatorios() {
           status,
           client:clients!inner(id, name, org_id)
         `)
-        .gte('due_at', firstDay)
-        .lt('due_at', lastDay);
+        .gte('internal_target_at', firstDay)
+        .lte('internal_target_at', lastDay);
 
       if (error) throw error;
 
@@ -148,10 +191,7 @@ export default function Relatorios() {
   const { data: instances } = useQuery({
     queryKey: ['instances-detail', selectedMonth],
     queryFn: async () => {
-      const [year, month] = selectedMonth.split('-');
-      const firstDay = `${year}-${month}-01`;
-      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
-      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
+      const { firstDay, lastDay } = getMonthRange(selectedMonth);
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -159,13 +199,14 @@ export default function Relatorios() {
           id,
           competence,
           due_at,
+          internal_target_at,
           status,
           client:clients!inner(name, org_id),
           obligation:obligations(name)
         `)
-        .gte('due_at', firstDay)
-        .lt('due_at', lastDay)
-        .order('due_at', { ascending: true });
+        .gte('internal_target_at', firstDay)
+        .lte('internal_target_at', lastDay)
+        .order('internal_target_at', { ascending: true });
 
       if (error) throw error;
       return data;
@@ -176,11 +217,7 @@ export default function Relatorios() {
   const { data: obligationStats, isLoading: loadingObligations } = useQuery({
     queryKey: ['obligation-stats', selectedMonth],
     queryFn: async () => {
-      // Calcular range de datas para o mês selecionado
-      const [year, month] = selectedMonth.split('-');
-      const firstDay = `${year}-${month}-01`;
-      const nextMonthDate = new Date(parseInt(year), parseInt(month), 1);
-      const lastDay = format(nextMonthDate, 'yyyy-MM-dd');
+      const { firstDay, lastDay } = getMonthRange(selectedMonth);
 
       const { data, error } = await supabase
         .from('obligation_instances')
@@ -189,8 +226,8 @@ export default function Relatorios() {
           obligation:obligations(id, name),
           client:clients!inner(org_id)
         `)
-        .gte('due_at', firstDay)
-        .lt('due_at', lastDay);
+        .gte('internal_target_at', firstDay)
+        .lte('internal_target_at', lastDay);
 
       if (error) throw error;
 
@@ -251,17 +288,12 @@ export default function Relatorios() {
   }, [generalStats]);
 
   if (loadingGeneral || loadingObligations) {
-    return (
-      <div className="p-8">
-        <h1 className="text-3xl font-bold text-foreground mb-6">Relatórios</h1>
-        <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-      </div>
-    );
+    return <ReportsSkeleton />;
   }
 
   return (
     <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold text-foreground">Relatórios</h1>
         <MonthSelector value={selectedMonth} onChange={setSelectedMonth} />
       </div>
@@ -294,23 +326,30 @@ export default function Relatorios() {
         />
       </div>
 
-      {/* Gráfico Geral */}
-      <ObrigacaoDonutChart
-        title="Geral - Todas as Obrigações"
-        data={generalStats || []}
-      />
+      <Separator />
 
-      {/* Gráfico de Evolução Temporal */}
+      {/* Gráficos lado a lado no desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gráfico Geral */}
+        <ObrigacaoDonutChart
+          title="Distribuição por Status"
+          data={generalStats || []}
+        />
+        
+        {/* Gráfico de Comparação entre Clientes */}
+        <ClientComparisonChart data={(clientComparison as any) || []} />
+      </div>
+
+      {/* Gráfico de Evolução Temporal - largura total */}
       <StatusEvolutionChart data={evolutionData || []} />
 
-      {/* Gráfico de Comparação entre Clientes */}
-      <ClientComparisonChart data={(clientComparison as any) || []} />
+      <Separator />
 
       {/* Gráficos por Obrigação */}
       {obligationStats && obligationStats.length > 0 && (
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-4">Detalhamento por Obrigação</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {obligationStats.map((obligation) => (
               <ObrigacaoDonutChart
                 key={obligation.id}
@@ -321,6 +360,8 @@ export default function Relatorios() {
           </div>
         </div>
       )}
+
+      <Separator />
 
       {/* Tabela Detalhada de Instâncias */}
       <InstancesTable data={(instances as any) || []} />
