@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.register-patient-via-invite]
 verify_jwt = false
+
+[functions.process-ocr]
+verify_jwt = false

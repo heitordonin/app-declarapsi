@@ -28,8 +28,11 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import type { StagingUploadWithOcr, OcrData } from '@/lib/ocr-types';
+import { formatCpfForDisplay, formatNitNisForDisplay } from '@/lib/ocr-types';
 
 const classificationSchema = z.object({
   client_id: z.string().uuid({ message: 'Selecione um cliente' }),
@@ -43,7 +46,7 @@ const classificationSchema = z.object({
 type ClassificationForm = z.infer<typeof classificationSchema>;
 
 interface ClassificationDialogProps {
-  upload: any;
+  upload: StagingUploadWithOcr | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -62,6 +65,11 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
     }
   });
 
+  const ocrData = upload?.ocr_data as OcrData | null;
+  const hasOcrWarnings = upload?.ocr_status === 'needs_review' || upload?.ocr_status === 'error';
+  const clientNotFound = ocrData?.matching && !ocrData.matching.client_found;
+  const obligationNotFound = ocrData?.matching && !ocrData.matching.obligation_found;
+
   useEffect(() => {
     if (upload && open) {
       form.reset({
@@ -79,7 +87,7 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, code, name')
+        .select('id, code, name, cpf, nit_nis')
         .eq('status', 'active')
         .order('name');
       
@@ -93,7 +101,7 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
     queryFn: async () => {
       const { data, error } = await supabase
         .from('obligations')
-        .select('id, name, frequency')
+        .select('id, name, frequency, fiscal_code')
         .order('name');
       
       if (error) throw error;
@@ -115,14 +123,14 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       if (!orgData) throw new Error('Organização não encontrada');
 
       // Generate unique filename if needed
-      let finalFileName = upload.file_name;
+      let finalFileName = upload!.file_name;
       let newPath = `${orgData.org_id}/${values.client_id}/${finalFileName}`;
 
       // Check if file already exists at destination
       const folderPath = `${orgData.org_id}/${values.client_id}`;
       const { data: existingFiles } = await supabase.storage
         .from('documents')
-        .list(folderPath, { search: upload.file_name });
+        .list(folderPath, { search: upload!.file_name });
 
       // If file exists, generate unique name with timestamp
       if (existingFiles && existingFiles.length > 0) {
@@ -130,14 +138,12 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
         const fileBase = finalFileName.substring(0, finalFileName.lastIndexOf('.'));
         finalFileName = `${fileBase}_${Date.now()}${fileExt}`;
         newPath = `${orgData.org_id}/${values.client_id}/${finalFileName}`;
-        
-        console.log('Arquivo duplicado detectado, usando nome único:', finalFileName);
       }
 
       // Move file to permanent location
       const { error: moveError } = await supabase.storage
         .from('documents')
-        .move(upload.file_path, newPath);
+        .move(upload!.file_path, newPath);
       
       if (moveError) {
         if (moveError.message?.includes('409') || moveError.message?.includes('Duplicate')) {
@@ -146,7 +152,7 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
         throw moveError;
       }
 
-      // Create document record with final filename
+      // Create document record
       const { error: docError } = await supabase
         .from('documents')
         .insert({
@@ -176,7 +182,7 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
           amount: values.amount ? parseFloat(values.amount) : null,
           due_at: values.due_at || null,
         })
-        .eq('id', upload.id);
+        .eq('id', upload!.id);
       
       if (updateError) throw updateError;
 
@@ -187,19 +193,15 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
         .eq('file_path', newPath)
         .single();
 
-      // Send notification email (don't await - fire and forget)
+      // Send notification email (fire and forget)
       if (newDocument) {
         supabase.functions.invoke('send-document-notification', {
           body: { documentId: newDocument.id }
-        }).then(({ error: emailError }) => {
-          if (emailError) {
-            console.error('Erro ao enviar notificação de documento:', emailError);
-          }
-        });
+        }).catch(console.error);
       }
 
       // Auto-complete obligation instance
-      const { data: instance, error: instanceError } = await supabase
+      const { data: instance } = await supabase
         .from('obligation_instances')
         .select('id, status, internal_target_at')
         .eq('client_id', values.client_id)
@@ -207,15 +209,12 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
         .eq('competence', values.competence)
         .maybeSingle();
 
-      if (instanceError) {
-        console.error('Erro ao buscar instância:', instanceError);
-      } else if (instance && instance.status !== 'on_time_done' && instance.status !== 'late_done') {
-        // Determine if completed on time or late
+      if (instance && instance.status !== 'on_time_done' && instance.status !== 'late_done') {
         const today = new Date().toISOString().split('T')[0];
         const isOnTime = today <= instance.internal_target_at;
         const newStatus = isOnTime ? 'on_time_done' : 'late_done';
 
-        const { error: completeError } = await supabase
+        await supabase
           .from('obligation_instances')
           .update({
             status: newStatus,
@@ -223,10 +222,6 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
             completion_notes: 'Concluída automaticamente via upload de documento'
           })
           .eq('id', instance.id);
-
-        if (completeError) {
-          console.error('Erro ao concluir instância automaticamente:', completeError);
-        }
       }
     },
     onSuccess: () => {
@@ -237,7 +232,6 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       queryClient.invalidateQueries({ queryKey: ['calendar-instances'] });
       queryClient.invalidateQueries({ queryKey: ['general-stats'] });
       queryClient.invalidateQueries({ queryKey: ['evolution-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['client-comparison'] });
       queryClient.invalidateQueries({ queryKey: ['instances-detail'] });
       queryClient.invalidateQueries({ queryKey: ['obligation-stats'] });
       toast.success('Documento classificado e obrigação concluída automaticamente!');
@@ -245,8 +239,7 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       form.reset();
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || 'Erro ao classificar documento';
-      toast.error(errorMessage);
+      toast.error(error?.message || 'Erro ao classificar documento');
       console.error('Erro na classificação:', error);
     }
   });
@@ -254,6 +247,21 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
   const onSubmit = (values: ClassificationForm) => {
     classifyMutation.mutate(values);
   };
+
+  // Get detected identifier for display
+  const getDetectedIdentifier = () => {
+    if (!ocrData?.extracted_data) return null;
+    
+    if (ocrData.document_type === 'darf' && ocrData.extracted_data.cpf) {
+      return `CPF detectado: ${formatCpfForDisplay(ocrData.extracted_data.cpf)}`;
+    }
+    if (ocrData.document_type === 'gps' && ocrData.extracted_data.nit_nis) {
+      return `NIT/NIS detectado: ${formatNitNisForDisplay(ocrData.extracted_data.nit_nis)}`;
+    }
+    return null;
+  };
+
+  const detectedIdentifier = getDetectedIdentifier();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -264,18 +272,59 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* File info */}
             <div className="bg-muted p-3 rounded-lg">
               <p className="text-sm font-medium text-muted-foreground">Arquivo:</p>
               <p className="text-sm font-semibold">{upload?.file_name}</p>
             </div>
+
+            {/* OCR Success indicator */}
+            {upload?.ocr_status === 'success' && (
+              <Alert className="bg-green-50 border-green-200">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-800">Documento lido com sucesso</AlertTitle>
+                <AlertDescription className="text-green-700">
+                  Todos os campos foram identificados e pré-preenchidos. Verifique e confirme.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* OCR Warning alerts */}
+            {upload?.ocr_status === 'needs_review' && (
+              <Alert className="bg-yellow-50 border-yellow-200">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTitle className="text-yellow-800">Atenção: Revisão necessária</AlertTitle>
+                <AlertDescription className="text-yellow-700">
+                  {upload.ocr_error || 'Alguns dados precisam de revisão manual.'}
+                  {detectedIdentifier && (
+                    <p className="mt-1 font-medium">{detectedIdentifier}</p>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {upload?.ocr_status === 'error' && (
+              <Alert className="bg-red-50 border-red-200">
+                <XCircle className="h-4 w-4 text-red-600" />
+                <AlertTitle className="text-red-800">Erro no processamento</AlertTitle>
+                <AlertDescription className="text-red-700">
+                  {upload.ocr_error || 'Não foi possível ler o documento. Preencha os campos manualmente.'}
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="client_id"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cliente *</FormLabel>
+                  <FormItem className={clientNotFound ? 'ring-2 ring-yellow-400 rounded-md p-2 -m-2' : ''}>
+                    <FormLabel>
+                      Cliente *
+                      {clientNotFound && (
+                        <span className="text-yellow-600 text-xs ml-2">(não encontrado)</span>
+                      )}
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -299,8 +348,13 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
                 control={form.control}
                 name="obligation_id"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Obrigação *</FormLabel>
+                  <FormItem className={obligationNotFound ? 'ring-2 ring-yellow-400 rounded-md p-2 -m-2' : ''}>
+                    <FormLabel>
+                      Obrigação *
+                      {obligationNotFound && (
+                        <span className="text-yellow-600 text-xs ml-2">(não mapeada)</span>
+                      )}
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -311,6 +365,11 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
                         {obligations?.map((obligation) => (
                           <SelectItem key={obligation.id} value={obligation.id}>
                             {obligation.name}
+                            {obligation.fiscal_code && (
+                              <span className="text-muted-foreground ml-1">
+                                ({obligation.fiscal_code})
+                              </span>
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -20,13 +20,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Search, MoreVertical, FileText, Trash2, CheckCircle2 } from 'lucide-react';
+import { Search, MoreVertical, FileText, Trash2, CheckCircle2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { OcrStatusBadge, DocumentTypeBadge } from './OcrStatusBadge';
+import type { StagingUploadWithOcr, OcrData } from '@/lib/ocr-types';
+import { formatCpfForDisplay, formatNitNisForDisplay } from '@/lib/ocr-types';
 
 interface StagingTableProps {
-  onClassify: (upload: any) => void;
+  onClassify: (upload: StagingUploadWithOcr) => void;
 }
 
 export function StagingTable({ onClassify }: StagingTableProps) {
@@ -44,9 +47,34 @@ export function StagingTable({ onClassify }: StagingTableProps) {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
-    }
+      // Cast through unknown to handle Json type compatibility
+      return data as unknown as StagingUploadWithOcr[];
+    },
+    refetchInterval: 5000, // Poll every 5 seconds for OCR updates
   });
+
+  // Subscribe to realtime updates for staging_uploads
+  useEffect(() => {
+    const channel = supabase
+      .channel('staging-uploads-ocr')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'staging_uploads',
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
+          queryClient.invalidateQueries({ queryKey: ['staging-uploads-count'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -74,9 +102,87 @@ export function StagingTable({ onClassify }: StagingTableProps) {
     }
   });
 
+  const reprocessMutation = useMutation({
+    mutationFn: async (uploadId: string) => {
+      const { error } = await supabase.functions.invoke('process-ocr', {
+        body: { uploadId }
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('OCR reiniciado!');
+      queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
+    },
+    onError: (error) => {
+      toast.error('Erro ao reprocessar OCR');
+      console.error(error);
+    }
+  });
+
   const filteredUploads = uploads?.filter(upload =>
-    upload.file_name.toLowerCase().includes(searchTerm.toLowerCase())
+    upload.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (upload.ocr_data as OcrData | null)?.matching?.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getClientDisplay = (upload: StagingUploadWithOcr) => {
+    const ocrData = upload.ocr_data as OcrData | null;
+    
+    if (ocrData?.matching?.client_found && ocrData?.matching?.client_name) {
+      return (
+        <span className="text-green-700">
+          [{ocrData.matching.client_code}] {ocrData.matching.client_name}
+        </span>
+      );
+    }
+    
+    if (ocrData?.extracted_data) {
+      const identifier = ocrData.document_type === 'darf' 
+        ? ocrData.extracted_data.cpf 
+        : ocrData.extracted_data.nit_nis;
+      
+      if (identifier) {
+        const formatted = ocrData.document_type === 'darf'
+          ? formatCpfForDisplay(identifier)
+          : formatNitNisForDisplay(identifier);
+        
+        return (
+          <span className="text-yellow-700">
+            {ocrData.document_type === 'darf' ? 'CPF' : 'NIT'}: {formatted}
+            <span className="block text-xs text-yellow-600">Não encontrado</span>
+          </span>
+        );
+      }
+    }
+    
+    if (upload.ocr_status === 'pending' || upload.ocr_status === 'processing') {
+      return <span className="text-muted-foreground">Aguardando...</span>;
+    }
+    
+    return <span className="text-red-600">Não identificado</span>;
+  };
+
+  const getObligationDisplay = (upload: StagingUploadWithOcr) => {
+    const ocrData = upload.ocr_data as OcrData | null;
+    
+    if (ocrData?.matching?.obligation_found && ocrData?.matching?.obligation_name) {
+      return <span className="text-green-700">{ocrData.matching.obligation_name}</span>;
+    }
+    
+    if (ocrData?.extracted_data?.codigo) {
+      return (
+        <span className="text-yellow-700">
+          Código: {ocrData.extracted_data.codigo}
+          <span className="block text-xs text-yellow-600">Não mapeado</span>
+        </span>
+      );
+    }
+    
+    if (upload.ocr_status === 'pending' || upload.ocr_status === 'processing') {
+      return <span className="text-muted-foreground">Aguardando...</span>;
+    }
+    
+    return <span className="text-red-600">Não identificado</span>;
+  };
 
   if (isLoading) {
     return (
@@ -107,7 +213,7 @@ export function StagingTable({ onClassify }: StagingTableProps) {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome do arquivo..."
+              placeholder="Buscar por nome do arquivo ou cliente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -118,65 +224,96 @@ export function StagingTable({ onClassify }: StagingTableProps) {
           </Badge>
         </div>
 
-        <div className="border rounded-lg">
+        <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Arquivo</TableHead>
-                <TableHead>Tamanho</TableHead>
-                <TableHead>Data de Upload</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Obrigação</TableHead>
+                <TableHead>Competência</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Status OCR</TableHead>
                 <TableHead className="w-[80px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUploads?.map((upload) => (
-                <TableRow key={upload.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{upload.file_name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {upload.file_size
-                      ? `${(upload.file_size / 1024 / 1024).toFixed(2)} MB`
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(upload.created_at), "dd/MM/yyyy 'às' HH:mm", {
-                      locale: ptBR
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                      Pendente
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onClassify(upload)}>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Classificar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeleteId(upload.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Remover
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filteredUploads?.map((upload) => {
+                const ocrData = upload.ocr_data as OcrData | null;
+                
+                return (
+                  <TableRow key={upload.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium truncate max-w-[200px]" title={upload.file_name}>
+                          {upload.file_name}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DocumentTypeBadge type={upload.document_type} />
+                    </TableCell>
+                    <TableCell>
+                      {getClientDisplay(upload)}
+                    </TableCell>
+                    <TableCell>
+                      {getObligationDisplay(upload)}
+                    </TableCell>
+                    <TableCell>
+                      {upload.competence || (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {upload.amount ? (
+                        <span>R$ {upload.amount.toFixed(2).replace('.', ',')}</span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <OcrStatusBadge 
+                        status={upload.ocr_status} 
+                        error={upload.ocr_error}
+                        documentType={upload.document_type}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onClassify(upload)}>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Classificar
+                          </DropdownMenuItem>
+                          {(upload.ocr_status === 'error' || upload.ocr_status === 'pending') && (
+                            <DropdownMenuItem 
+                              onClick={() => reprocessMutation.mutate(upload.id)}
+                              disabled={reprocessMutation.isPending}
+                            >
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Reprocessar OCR
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => setDeleteId(upload.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remover
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

@@ -7,9 +7,10 @@ import { ClassificationDialog } from '@/components/conferencia/ClassificationDia
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import type { StagingUploadWithOcr } from '@/lib/ocr-types';
 
 export default function Conferencia() {
-  const [classifyingUpload, setClassifyingUpload] = useState<any>(null);
+  const [classifyingUpload, setClassifyingUpload] = useState<StagingUploadWithOcr | null>(null);
   const queryClient = useQueryClient();
 
   const { data: pendingCount } = useQuery({
@@ -38,7 +39,9 @@ export default function Conferencia() {
       
       if (!orgData) throw new Error('Organização não encontrada');
 
-      const uploads = await Promise.all(
+      const uploadedRecords: { id: string; fileName: string }[] = [];
+
+      await Promise.all(
         files.map(async (file) => {
           const filePath = `${orgData.org_id}/staging/${Date.now()}-${file.name}`;
           
@@ -48,7 +51,7 @@ export default function Conferencia() {
           
           if (uploadError) throw uploadError;
 
-          const { error: insertError } = await supabase
+          const { data: insertData, error: insertError } = await supabase
             .from('staging_uploads')
             .insert({
               org_id: orgData.org_id,
@@ -56,19 +59,37 @@ export default function Conferencia() {
               file_name: file.name,
               file_path: filePath,
               file_size: file.size,
-              state: 'pending'
-            });
+              state: 'pending',
+              ocr_status: 'pending'
+            })
+            .select('id')
+            .single();
           
           if (insertError) throw insertError;
+          
+          uploadedRecords.push({ id: insertData.id, fileName: file.name });
         })
       );
 
-      return uploads;
+      return uploadedRecords;
     },
-    onSuccess: () => {
+    onSuccess: async (uploadedRecords) => {
       queryClient.invalidateQueries({ queryKey: ['staging-uploads'] });
       queryClient.invalidateQueries({ queryKey: ['staging-uploads-count'] });
-      toast.success('Arquivos enviados com sucesso!');
+      
+      const count = uploadedRecords.length;
+      toast.success(
+        `${count} ${count === 1 ? 'arquivo enviado' : 'arquivos enviados'}! Processando OCR automaticamente...`
+      );
+
+      // Trigger OCR processing for each uploaded file (fire and forget)
+      for (const record of uploadedRecords) {
+        supabase.functions.invoke('process-ocr', {
+          body: { uploadId: record.id }
+        }).catch((error) => {
+          console.error(`OCR failed for ${record.fileName}:`, error);
+        });
+      }
     },
     onError: (error) => {
       toast.error('Erro ao enviar arquivos');
@@ -85,7 +106,7 @@ export default function Conferencia() {
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">Conferência</h1>
         <p className="text-muted-foreground">
-          Faça upload e classifique documentos para envio aos clientes.
+          Faça upload de DARFs e GPS. O sistema lê automaticamente os documentos e pré-preenche os dados para classificação.
         </p>
       </div>
 
