@@ -5,14 +5,14 @@ import { MonthSelector } from '@/components/relatorios/MonthSelector';
 import { ObrigacaoDonutChart } from '@/components/relatorios/ObrigacaoDonutChart';
 import { KPICard } from '@/components/relatorios/KPICard';
 import { StatusEvolutionChart } from '@/components/relatorios/StatusEvolutionChart';
-import { ClientComparisonChart } from '@/components/relatorios/ClientComparisonChart';
 import { InstancesTable } from '@/components/relatorios/InstancesTable';
-import { format, subMonths, endOfMonth, startOfMonth, addMonths } from 'date-fns';
+import { format, subMonths, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Clock, AlertCircle, TrendingUp } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { getEffectiveStatus, ObligationStatus } from '@/lib/obligation-status-utils';
 
 // Helper function to get date range for a month
 function getMonthRange(yearMonth: string) {
@@ -63,7 +63,7 @@ function ReportsSkeleton() {
 export default function Relatorios() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
 
-  // Estatísticas gerais - usando internal_target_at
+  // Estatísticas gerais - usando internal_target_at com cálculo de status em tempo real
   const { data: generalStats, isLoading: loadingGeneral } = useQuery({
     queryKey: ['general-stats', selectedMonth],
     queryFn: async () => {
@@ -73,6 +73,7 @@ export default function Relatorios() {
         .from('obligation_instances')
         .select(`
           status,
+          internal_target_at,
           client:clients!inner(org_id)
         `)
         .gte('internal_target_at', firstDay)
@@ -80,9 +81,13 @@ export default function Relatorios() {
 
       if (error) throw error;
 
-      // Agrupar por status
+      // Agrupar por status EFETIVO (calculado em tempo real)
       const grouped = data.reduce((acc: Record<string, number>, item) => {
-        acc[item.status] = (acc[item.status] || 0) + 1;
+        const effectiveStatus = getEffectiveStatus(
+          item.status as ObligationStatus,
+          item.internal_target_at
+        );
+        acc[effectiveStatus] = (acc[effectiveStatus] || 0) + 1;
         return acc;
       }, {});
 
@@ -119,6 +124,7 @@ export default function Relatorios() {
             .from('obligation_instances')
             .select(`
               status,
+              internal_target_at,
               client:clients!inner(org_id)
             `)
             .gte('internal_target_at', month.firstDay)
@@ -126,8 +132,13 @@ export default function Relatorios() {
 
           if (error) throw error;
 
+          // Usar status efetivo calculado em tempo real
           const grouped = data.reduce((acc: Record<string, number>, item) => {
-            acc[item.status] = (acc[item.status] || 0) + 1;
+            const effectiveStatus = getEffectiveStatus(
+              item.status as ObligationStatus,
+              item.internal_target_at
+            );
+            acc[effectiveStatus] = (acc[effectiveStatus] || 0) + 1;
             return acc;
           }, {});
 
@@ -139,51 +150,6 @@ export default function Relatorios() {
       );
 
       return results;
-    },
-  });
-
-  // Comparação por cliente
-  const { data: clientComparison } = useQuery({
-    queryKey: ['client-comparison', selectedMonth],
-    queryFn: async () => {
-      const { firstDay, lastDay } = getMonthRange(selectedMonth);
-
-      const { data, error } = await supabase
-        .from('obligation_instances')
-        .select(`
-          status,
-          client:clients!inner(id, name, org_id)
-        `)
-        .gte('internal_target_at', firstDay)
-        .lte('internal_target_at', lastDay);
-
-      if (error) throw error;
-
-      const grouped = data.reduce((acc: Record<string, any>, item) => {
-        const clientId = item.client.id;
-        const clientName = item.client.name;
-
-        if (!acc[clientId]) {
-          acc[clientId] = {
-            clientName,
-            completed: 0,
-            pending: 0,
-            overdue: 0,
-          };
-        }
-
-        if (item.status === 'on_time_done' || item.status === 'late_done') {
-          acc[clientId].completed++;
-        } else if (item.status === 'pending' || item.status === 'due_48h') {
-          acc[clientId].pending++;
-        } else if (item.status === 'overdue') {
-          acc[clientId].overdue++;
-        }
-
-        return acc;
-      }, {});
-
-      return Object.values(grouped);
     },
   });
 
@@ -223,6 +189,7 @@ export default function Relatorios() {
         .from('obligation_instances')
         .select(`
           status,
+          internal_target_at,
           obligation:obligations(id, name),
           client:clients!inner(org_id)
         `)
@@ -231,10 +198,14 @@ export default function Relatorios() {
 
       if (error) throw error;
 
-      // Agrupar por obrigação e status
+      // Agrupar por obrigação e status EFETIVO
       const grouped = data.reduce((acc: Record<string, any>, item) => {
         const obligationId = item.obligation.id;
         const obligationName = item.obligation.name;
+        const effectiveStatus = getEffectiveStatus(
+          item.status as ObligationStatus,
+          item.internal_target_at
+        );
 
         if (!acc[obligationId]) {
           acc[obligationId] = {
@@ -243,8 +214,8 @@ export default function Relatorios() {
           };
         }
 
-        acc[obligationId].stats[item.status] =
-          (acc[obligationId].stats[item.status] || 0) + 1;
+        acc[obligationId].stats[effectiveStatus] =
+          (acc[obligationId].stats[effectiveStatus] || 0) + 1;
 
         return acc;
       }, {});
@@ -328,16 +299,12 @@ export default function Relatorios() {
 
       <Separator />
 
-      {/* Gráficos lado a lado no desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Gráfico Geral */}
+      {/* Gráfico de Distribuição por Status */}
+      <div className="max-w-xl">
         <ObrigacaoDonutChart
           title="Distribuição por Status"
           data={generalStats || []}
         />
-        
-        {/* Gráfico de Comparação entre Clientes */}
-        <ClientComparisonChart data={(clientComparison as any) || []} />
       </div>
 
       {/* Gráfico de Evolução Temporal - largura total */}

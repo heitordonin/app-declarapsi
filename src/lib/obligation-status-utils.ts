@@ -65,3 +65,42 @@ export function getStatusIcon(status: ObligationStatus) {
 export function getStatusStyles(status: ObligationStatus) {
   return STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 }
+
+/**
+ * Calcula o status efetivo baseado na data atual e no prazo interno.
+ * Usado para garantir que o frontend mostre o status correto em tempo real,
+ * independente do status armazenado no banco (que depende de cron job).
+ */
+export function getEffectiveStatus(
+  dbStatus: ObligationStatus,
+  internalTargetAt: string | Date
+): ObligationStatus {
+  // Se já está concluído, manter o status
+  if (dbStatus === 'on_time_done' || dbStatus === 'late_done') {
+    return dbStatus;
+  }
+
+  const now = new Date();
+  const targetDate = new Date(internalTargetAt);
+  
+  // Comparar apenas as datas (ignorando horário)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  
+  // Se prazo interno já passou → overdue
+  if (target < today) {
+    return 'overdue';
+  }
+
+  // Calcular diferença em horas para verificar 48h
+  const diffMs = targetDate.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  // Se falta 48h ou menos → due_48h
+  if (diffHours <= 48 && diffHours >= 0) {
+    return 'due_48h';
+  }
+
+  // Caso contrário, manter pending
+  return 'pending';
+}
