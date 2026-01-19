@@ -72,9 +72,10 @@ const bottomMenuItems = [
 
 interface ClienteSidebarProps {
   unreadCount?: number;
+  newDocumentsCount?: number;
 }
 
-export function ClienteSidebar({ unreadCount = 0 }: ClienteSidebarProps) {
+export function ClienteSidebar({ unreadCount = 0, newDocumentsCount = 0 }: ClienteSidebarProps) {
   const { signOut } = useAuth();
   const location = useLocation();
   const { state } = useSidebar();
@@ -112,13 +113,16 @@ export function ClienteSidebar({ unreadCount = 0 }: ClienteSidebarProps) {
                 {module.items.map((item) => {
                   const isActive = location.pathname === item.path;
                   const showUnreadBadge = item.path === '/cliente/comunicados' && unreadCount > 0;
+                  const showNewDocsBadge = item.path === '/cliente/pagamentos' && newDocumentsCount > 0;
+                  const showBadge = showUnreadBadge || showNewDocsBadge;
+                  
                   return (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton asChild isActive={isActive}>
                         <Link to={item.path} className="relative">
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
-                          {showUnreadBadge && (
+                          {showBadge && (
                             <span className="absolute right-2 flex h-2 w-2">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
