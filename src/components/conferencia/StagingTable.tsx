@@ -50,7 +50,7 @@ export function StagingTable({ onClassify }: StagingTableProps) {
       // Cast through unknown to handle Json type compatibility
       return data as unknown as StagingUploadWithOcr[];
     },
-    refetchInterval: 5000, // Poll every 5 seconds for OCR updates
+    refetchInterval: 3000, // Faster polling as fallback (Realtime is primary)
   });
 
   // Subscribe to realtime updates for staging_uploads

@@ -12,7 +12,8 @@ const statusConfig: Record<string, {
   label: string; 
   icon: typeof Clock; 
   className: string;
-  animate?: boolean;
+  iconAnimate?: string;
+  badgeAnimate?: string;
 }> = {
   pending: { 
     label: 'Aguardando OCR', 
@@ -22,8 +23,8 @@ const statusConfig: Record<string, {
   processing: { 
     label: 'Lendo documento...', 
     icon: Loader2, 
-    className: 'bg-blue-100 text-blue-700 border-blue-300',
-    animate: true 
+    className: 'bg-blue-100 text-blue-700 border-blue-300 animate-pulse',
+    iconAnimate: 'animate-spin',
   },
   success: { 
     label: 'Lido com sucesso', 
@@ -71,7 +72,7 @@ export function OcrStatusBadge({ status, error, documentType }: OcrStatusBadgePr
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant="outline" className={`${config.className} cursor-help`}>
-            <Icon className={`h-3 w-3 mr-1 ${config.animate ? 'animate-spin' : ''}`} />
+            <Icon className={`h-3 w-3 mr-1 ${config.iconAnimate || ''}`} />
             {config.label}
           </Badge>
         </TooltipTrigger>
