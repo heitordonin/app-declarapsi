@@ -380,6 +380,7 @@ export type Database = {
           id: string
           obligation_id: string
           org_id: string
+          viewed_at: string | null
         }
         Insert: {
           amount?: number | null
@@ -396,6 +397,7 @@ export type Database = {
           id?: string
           obligation_id: string
           org_id: string
+          viewed_at?: string | null
         }
         Update: {
           amount?: number | null
@@ -412,6 +414,7 @@ export type Database = {
           id?: string
           obligation_id?: string
           org_id?: string
+          viewed_at?: string | null
         }
         Relationships: [
           {
