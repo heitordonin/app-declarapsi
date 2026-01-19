@@ -634,6 +634,7 @@ export type Database = {
       obligations: {
         Row: {
           created_at: string
+          fiscal_code: string | null
           frequency: Database["public"]["Enums"]["frequency_type"]
           id: string
           internal_target_day: number
@@ -645,6 +646,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fiscal_code?: string | null
           frequency: Database["public"]["Enums"]["frequency_type"]
           id?: string
           internal_target_day: number
@@ -656,6 +658,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fiscal_code?: string | null
           frequency?: Database["public"]["Enums"]["frequency_type"]
           id?: string
           internal_target_day?: number
@@ -841,12 +844,16 @@ export type Database = {
           client_id: string | null
           competence: string | null
           created_at: string
+          document_type: string | null
           due_at: string | null
           file_name: string
           file_path: string
           file_size: number | null
           id: string
           obligation_id: string | null
+          ocr_data: Json | null
+          ocr_error: string | null
+          ocr_status: string | null
           org_id: string
           state: Database["public"]["Enums"]["upload_state"]
           uploaded_by: string
@@ -856,12 +863,16 @@ export type Database = {
           client_id?: string | null
           competence?: string | null
           created_at?: string
+          document_type?: string | null
           due_at?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
           id?: string
           obligation_id?: string | null
+          ocr_data?: Json | null
+          ocr_error?: string | null
+          ocr_status?: string | null
           org_id: string
           state?: Database["public"]["Enums"]["upload_state"]
           uploaded_by: string
@@ -871,12 +882,16 @@ export type Database = {
           client_id?: string | null
           competence?: string | null
           created_at?: string
+          document_type?: string | null
           due_at?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
           id?: string
           obligation_id?: string | null
+          ocr_data?: Json | null
+          ocr_error?: string | null
+          ocr_status?: string | null
           org_id?: string
           state?: Database["public"]["Enums"]["upload_state"]
           uploaded_by?: string
