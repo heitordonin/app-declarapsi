@@ -32,9 +32,14 @@ export default function Pagamentos() {
 
   const filteredPayments = useMemo(() => {
     return payments.filter((payment) => {
-      // Filter by month (using competence)
-      if (selectedMonth && payment.competence !== selectedMonth) {
-        return false;
+      // Filter by month (using due date)
+      if (selectedMonth) {
+        const dueDateMonth = payment.dueDate
+          ? format(new Date(payment.dueDate), 'yyyy-MM')
+          : null;
+        if (dueDateMonth !== selectedMonth) {
+          return false;
+        }
       }
 
       // Filter by search
