@@ -147,7 +147,7 @@ export function StandardDescriptionsDialog({
                 setNewDescription('');
               }
             }}
-            autoFocus
+            autoFocus={!isMobile}
             className="flex-1"
           />
           <Button
@@ -217,7 +217,7 @@ export function StandardDescriptionsDialog({
                         if (e.key === 'Enter') handleSaveEdit();
                         if (e.key === 'Escape') handleCancelEdit();
                       }}
-                      autoFocus
+                      autoFocus={!isMobile}
                       className="flex-1"
                     />
                     <Button
@@ -281,8 +281,8 @@ export function StandardDescriptionsDialog({
   if (isMobile) {
     return (
       <>
-        <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent className="max-h-[85vh]">
+        <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+          <DrawerContent className="max-h-[600px]">
             <DrawerHeader className="bg-primary text-primary-foreground rounded-t-[10px]">
               <DrawerTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
