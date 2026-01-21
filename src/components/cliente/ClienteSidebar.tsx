@@ -78,8 +78,14 @@ interface ClienteSidebarProps {
 export function ClienteSidebar({ unreadCount = 0, newDocumentsCount = 0 }: ClienteSidebarProps) {
   const { signOut } = useAuth();
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed';
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -119,7 +125,7 @@ export function ClienteSidebar({ unreadCount = 0, newDocumentsCount = 0 }: Clien
                   return (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton asChild isActive={isActive}>
-                        <Link to={item.path} className="relative">
+                        <Link to={item.path} className="relative" onClick={handleNavClick}>
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
                           {showBadge && (
@@ -147,7 +153,7 @@ export function ClienteSidebar({ unreadCount = 0, newDocumentsCount = 0 }: Clien
             return (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton asChild isActive={isActive}>
-                  <Link to={item.path}>
+                  <Link to={item.path} onClick={handleNavClick}>
                     <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
@@ -158,7 +164,7 @@ export function ClienteSidebar({ unreadCount = 0, newDocumentsCount = 0 }: Clien
           
           {/* Botão Sair */}
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => signOut()}>
+            <SidebarMenuButton onClick={() => { handleNavClick(); signOut(); }}>
               <LogOut className="h-4 w-4" />
               <span>Sair</span>
             </SidebarMenuButton>
