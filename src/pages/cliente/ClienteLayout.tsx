@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { ClienteSidebar } from '@/components/cliente/ClienteSidebar';
+import { ClienteBottomNav } from '@/components/cliente/ClienteBottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -70,10 +71,10 @@ export default function ClienteLayout() {
       <div className="min-h-screen flex w-full bg-background">
         <ClienteSidebar unreadCount={unreadCount} newDocumentsCount={newDocumentsCount} />
         
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">
           <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-14 items-center justify-between px-4">
-              <SidebarTrigger />
+              <SidebarTrigger className="hidden md:flex" />
               
               {/* Info do cliente no centro */}
               <div className="text-center">
@@ -97,6 +98,9 @@ export default function ClienteLayout() {
             <Outlet />
           </div>
         </main>
+        
+        {/* Bottom Navigation apenas no mobile */}
+        <ClienteBottomNav />
       </div>
     </SidebarProvider>
   );
