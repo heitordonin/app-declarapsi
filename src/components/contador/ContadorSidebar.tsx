@@ -29,8 +29,14 @@ const navItems = [
 export function ContadorSidebar() {
   const { signOut } = useAuth();
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed';
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -61,7 +67,7 @@ export function ContadorSidebar() {
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link to={item.path}>
+                      <Link to={item.path} onClick={handleNavClick}>
                         <Icon className="h-4 w-4" />
                         <span>{item.label}</span>
                       </Link>
@@ -77,7 +83,7 @@ export function ContadorSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => signOut()}>
+            <SidebarMenuButton onClick={() => { handleNavClick(); signOut(); }}>
               <LogOut className="h-4 w-4" />
               <span>Sair</span>
             </SidebarMenuButton>
