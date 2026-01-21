@@ -166,7 +166,7 @@ export function ResponsiveActionPanel({
   if (isMobile) {
     return (
       <>
-        <Drawer open={open} onOpenChange={handleOpenChange}>
+        <Drawer open={open} onOpenChange={handleOpenChange} repositionInputs={false}>
           <DrawerContent className="max-h-[90vh] flex flex-col">
             {PanelHeader}
             {PanelContent}

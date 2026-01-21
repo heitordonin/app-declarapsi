@@ -281,7 +281,12 @@ export function StandardDescriptionsDialog({
   if (isMobile) {
     return (
       <>
-        <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+        <Drawer 
+          open={open} 
+          onOpenChange={onOpenChange} 
+          shouldScaleBackground={false}
+          repositionInputs={false}
+        >
           <DrawerContent className="max-h-[600px]">
             <DrawerHeader className="bg-primary text-primary-foreground rounded-t-[10px]">
               <DrawerTitle className="flex items-center gap-2">
