@@ -32,7 +32,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Download, Send, Trash2, Filter } from "lucide-react";
+import { Download, Send, Trash2, Filter, Mail, MailOpen, MailX, Clock, Check, Eye } from "lucide-react";
 
 interface Document {
   id: string;
@@ -45,6 +45,7 @@ interface Document {
   due_at: string | null;
   amount: number | null;
   delivery_state: string;
+  viewed_at: string | null;
   client: {
     id: string;
     name: string;
@@ -55,22 +56,35 @@ interface Document {
   };
 }
 
-const getDeliveryStateLabel = (state: string) => {
-  const labels: Record<string, string> = {
-    sent: "Enviado",
-    viewed: "Visualizado",
-    downloaded: "Baixado",
+const getDeliveryStateConfig = (state: string) => {
+  const config: Record<string, { label: string; className: string; icon: typeof Mail }> = {
+    sent: {
+      label: "Enviado",
+      className: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+      icon: Mail,
+    },
+    delivered: {
+      label: "Entregue",
+      className: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
+      icon: Check,
+    },
+    opened: {
+      label: "Aberto",
+      className: "bg-green-500/10 text-green-700 dark:text-green-400",
+      icon: MailOpen,
+    },
+    bounced: {
+      label: "Rejeitado",
+      className: "bg-red-500/10 text-red-700 dark:text-red-400",
+      icon: MailX,
+    },
+    failed: {
+      label: "Falhou",
+      className: "bg-red-500/10 text-red-700 dark:text-red-400",
+      icon: MailX,
+    },
   };
-  return labels[state] || state;
-};
-
-const getDeliveryStateColor = (state: string) => {
-  const colors: Record<string, string> = {
-    sent: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-    viewed: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-    downloaded: "bg-green-500/10 text-green-700 dark:text-green-400",
-  };
-  return colors[state] || "bg-gray-500/10 text-gray-700 dark:text-gray-400";
+  return config[state] || { label: state, className: "bg-muted text-muted-foreground", icon: Clock };
 };
 
 export function DocumentosTable() {
@@ -296,7 +310,8 @@ export function DocumentosTable() {
                 <TableHead>Data de Envio</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>E-mail</TableHead>
+                <TableHead>Visualizado</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -326,9 +341,26 @@ export function DocumentosTable() {
                       {doc.amount ? `R$ ${Number(doc.amount).toFixed(2)}` : "-"}
                     </TableCell>
                     <TableCell>
-                      <Badge className={getDeliveryStateColor(doc.delivery_state)}>
-                        {getDeliveryStateLabel(doc.delivery_state)}
-                      </Badge>
+                      {(() => {
+                        const config = getDeliveryStateConfig(doc.delivery_state);
+                        const IconComponent = config.icon;
+                        return (
+                          <Badge className={`${config.className} flex items-center gap-1 w-fit`}>
+                            <IconComponent className="h-3 w-3" />
+                            {config.label}
+                          </Badge>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      {doc.viewed_at ? (
+                        <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 flex items-center gap-1 w-fit">
+                          <Eye className="h-3 w-3" />
+                          {format(new Date(doc.viewed_at), "dd/MM HH:mm", { locale: ptBR })}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

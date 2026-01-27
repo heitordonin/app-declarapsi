@@ -186,18 +186,21 @@ export function ClassificationDialog({ upload, open, onOpenChange }: Classificat
       
       if (updateError) throw updateError;
 
-      // Get the created document ID for email notification
+      // Get the created document ID for email queue
       const { data: newDocument } = await supabase
         .from('documents')
         .select('id')
         .eq('file_path', newPath)
         .single();
 
-      // Send notification email (fire and forget)
+      // Add to email queue instead of sending directly
       if (newDocument) {
-        supabase.functions.invoke('send-document-notification', {
-          body: { documentId: newDocument.id }
-        }).catch(console.error);
+        await supabase
+          .from('email_queue')
+          .insert({
+            document_id: newDocument.id,
+            status: 'pending',
+          });
       }
 
       // Auto-complete obligation instance
