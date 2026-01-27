@@ -134,7 +134,7 @@ serve(async (req) => {
 
         // Enviar email com tracking habilitado
         const { data: emailData, error: emailError } = await resend.emails.send({
-          from: 'Declara Psi <onboarding@resend.dev>',
+          from: 'Declara Psi <noreply@declarapsi.com.br>',
           to: [client.email],
           subject: `Novo documento disponível - ${obligation.name}`,
           html,
