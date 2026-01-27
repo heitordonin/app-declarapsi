@@ -122,7 +122,7 @@ serve(async (req) => {
 
         // Enviar email
         const { error: emailError } = await resend.emails.send({
-          from: 'Declara Psi <onboarding@resend.dev>',
+          from: 'Declara Psi <noreply@declarapsi.com.br>',
           to: [client.email],
           subject: `⚠️ Documento vencendo hoje - ${obligation.name}`,
           html,
