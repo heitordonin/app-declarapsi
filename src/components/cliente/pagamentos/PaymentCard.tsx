@@ -96,7 +96,10 @@ export function PaymentCard({ payment, onDownload, onMarkAsPaid, onUnmarkAsPaid,
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Vencimento:</span>
             <span className="text-foreground">
-              {format(new Date(payment.dueDate), 'dd/MM/yyyy')}
+              {payment.dueDate 
+                ? format(new Date(payment.dueDate), 'dd/MM/yyyy')
+                : 'Sem vencimento'
+              }
             </span>
           </div>
           <div className="flex justify-between items-center">

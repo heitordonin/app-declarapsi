@@ -1,6 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Charge data from join
+interface PatientCharge {
+  id: string;
+  description: string;
+  amount: number;
+  status: 'pending' | 'overdue' | 'paid';
+  due_date: string;
+  payment_date: string | null;
+}
+
 // Database Patient type
 export interface Patient {
   id: string;
@@ -22,6 +32,7 @@ export interface Patient {
   created_via: 'manual' | 'invite_link';
   created_at: string;
   updated_at: string;
+  charges?: PatientCharge[];
 }
 
 // Display model for components (includes computed fields)
@@ -76,6 +87,40 @@ interface PatientFormData {
 
 // Transform database patient to display model
 function toDisplayModel(patient: Patient): PatientDisplayModel {
+  const charges = patient.charges || [];
+  
+  // Separate charges by status
+  const pendingCharges = charges
+    .filter(c => c.status !== 'paid')
+    .map(c => ({
+      id: c.id,
+      description: c.description,
+      dueDate: c.due_date,
+      value: Number(c.amount),
+    }));
+    
+  const receivedCharges = charges
+    .filter(c => c.status === 'paid')
+    .map(c => ({
+      id: c.id,
+      description: c.description,
+      paymentDate: c.payment_date || c.due_date,
+      value: Number(c.amount),
+    }));
+  
+  // Calculate totals
+  const toReceive = charges
+    .filter(c => c.status === 'pending')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+    
+  const overdue = charges
+    .filter(c => c.status === 'overdue')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+    
+  const received = charges
+    .filter(c => c.status === 'paid')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+
   return {
     id: patient.id,
     name: patient.name,
@@ -85,12 +130,12 @@ function toDisplayModel(patient: Patient): PatientDisplayModel {
     type: patient.type,
     tags: patient.is_foreign_payment ? ['Pagamento do exterior'] : [],
     financial: {
-      toReceive: 0,
-      overdue: 0,
-      received: 0,
+      toReceive,
+      overdue,
+      received,
     },
-    pendingCharges: [],
-    receivedCharges: [],
+    pendingCharges,
+    receivedCharges,
   };
 }
 
@@ -102,7 +147,17 @@ export function usePatientsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('patients')
-        .select('*')
+        .select(`
+          *,
+          charges(
+            id,
+            description,
+            amount,
+            status,
+            due_date,
+            payment_date
+          )
+        `)
         .order('name');
 
       if (error) {

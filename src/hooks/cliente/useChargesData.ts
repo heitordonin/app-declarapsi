@@ -227,6 +227,7 @@ export function useChargesData() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-charges'] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
     },
   });
 
@@ -238,6 +239,7 @@ export function useChargesData() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-charges'] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
     },
   });
 
@@ -248,6 +250,7 @@ export function useChargesData() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-charges'] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
     },
   });
 
@@ -258,6 +261,7 @@ export function useChargesData() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-charges'] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
     },
   });
 
@@ -268,6 +272,7 @@ export function useChargesData() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-charges'] });
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
     },
   });
 
