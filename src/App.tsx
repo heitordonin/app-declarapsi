@@ -17,6 +17,7 @@ import DocumentosPermanentes from "./pages/contador/DocumentosPermanentes";
 import Configuracoes from "./pages/contador/Configuracoes";
 import Comunicados from "./pages/contador/Comunicados";
 import Clientes from "./pages/contador/Clientes";
+import Emails from "./pages/contador/Emails";
 import ClienteLayout from "./pages/cliente/ClienteLayout";
 import Index from "./pages/cliente/Index";
 import Dashboard from "./pages/cliente/Dashboard";
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="conferencia" element={<Conferencia />} />
               <Route path="protocolos" element={<Protocolos />} />
               <Route path="documentos" element={<DocumentosPermanentes />} />
+              <Route path="emails" element={<Emails />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="comunicados" element={<Comunicados />} />
               <Route path="clientes" element={<Clientes />} />
