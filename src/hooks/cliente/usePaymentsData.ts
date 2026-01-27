@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isBefore, startOfDay } from 'date-fns';
 
-export type PaymentStatus = 'pending' | 'viewed' | 'overdue';
+export type PaymentStatus = 'pending' | 'viewed' | 'overdue' | 'paid';
 
 export interface Payment {
   id: string;
@@ -16,9 +16,11 @@ export interface Payment {
   fileName: string;
   competence: string;
   viewedAt: string | null;
+  paidAt: string | null;
 }
 
-const getPaymentStatus = (dueAt: Date, viewedAt: string | null): PaymentStatus => {
+const getPaymentStatus = (dueAt: Date, viewedAt: string | null, paidAt: string | null): PaymentStatus => {
+  if (paidAt) return 'paid';
   const today = startOfDay(new Date());
   if (isBefore(dueAt, today)) return 'overdue';
   if (viewedAt) return 'viewed';
@@ -45,6 +47,7 @@ export function usePaymentsData(clientId?: string) {
           delivery_state,
           competence,
           viewed_at,
+          paid_at,
           obligation:obligations(name)
         `)
         .eq('client_id', clientId)
@@ -61,13 +64,14 @@ export function usePaymentsData(clientId?: string) {
           title: doc.obligation?.name || doc.file_name,
           value: doc.amount,
           dueDate: doc.due_at,
-          status: getPaymentStatus(dueDate, doc.viewed_at),
+          status: getPaymentStatus(dueDate, doc.viewed_at, doc.paid_at),
           deliveredAt: doc.delivered_at,
           isNew: doc.delivery_state === 'sent' && !doc.viewed_at,
           filePath: doc.file_path,
           fileName: doc.file_name,
           competence: doc.competence,
           viewedAt: doc.viewed_at,
+          paidAt: doc.paid_at,
         };
       });
     },
@@ -89,6 +93,20 @@ export function usePaymentsData(clientId?: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-payments'] });
       queryClient.invalidateQueries({ queryKey: ['new-documents-count'] });
+    },
+  });
+
+  const markAsPaidMutation = useMutation({
+    mutationFn: async ({ documentId, paidAt }: { documentId: string; paidAt: Date }) => {
+      const { error } = await supabase
+        .from('documents')
+        .update({ paid_at: paidAt.toISOString() })
+        .eq('id', documentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-payments'] });
     },
   });
 
@@ -129,5 +147,7 @@ export function usePaymentsData(clientId?: string) {
     error,
     downloadDocument,
     markAsViewed: markAsViewedMutation.mutate,
+    markAsPaid: markAsPaidMutation.mutateAsync,
+    isMarkingAsPaid: markAsPaidMutation.isPending,
   };
 }
