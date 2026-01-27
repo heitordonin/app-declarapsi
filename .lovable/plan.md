@@ -1,224 +1,301 @@
 
-# Reconhecimento Automatico de Categoria: DARF vs INSS
+# Plano de Correção de Bugs Identificados na Área do Cliente
 
-## Resumo
+## Resumo Executivo
 
-Atualizar a funcionalidade de "Marcar como Pago" para identificar automaticamente se o documento e um DARF ou INSS e registrar na categoria de despesa correta.
+Este plano detalha a correção de 3 bugs identificados durante a auditoria da área do cliente, ordenados por prioridade de impacto.
 
-## Contexto
+---
 
-O sistema possui duas categorias de despesas para pagamentos fiscais:
-- **DARF Carne-Leao** (id: `5bdb11af-bb34-4eda-a864-c2a400f0e7a9`)
-- **INSS - Previdencia Social** (id: `7993b8a5-3bbd-484e-ba43-c78bf1fe8c9b`)
+## Bug 1: Cobranças do Paciente Não Carregando (CRÍTICO)
 
-As obrigacoes cadastradas sao:
-- "DARF Carne Leao" - deve registrar como DARF
-- "INSS 1007" - deve registrar como INSS
-- "INSS 1163" - deve registrar como INSS
+### Problema Identificado
 
-## Arquitetura da Solucao
+A função `toDisplayModel` em `usePatientsData.ts` (linhas 78-95) retorna valores zerados e arrays vazios para o resumo financeiro e histórico de cobranças do paciente:
 
-```text
-+------------------+     +----------------------+     +------------------+
-| documents        | --> | Payment interface    | --> | Pagamentos.tsx   |
-| obligation_id    |     | + obligationName     |     | detecta categoria|
-+------------------+     +----------------------+     +------------------+
-                                                              |
-                                                              v
-                                                    +------------------+
-                                                    | DARF? → DARF ID  |
-                                                    | INSS? → INSS ID  |
-                                                    +------------------+
+```typescript
+// Código atual - sempre retorna zeros
+financial: {
+  toReceive: 0,
+  overdue: 0,
+  received: 0,
+},
+pendingCharges: [],
+receivedCharges: [],
 ```
 
-## Alteracoes no Codigo
+Isso faz com que `PatientDetails`, `PatientFinancialSummary` e `PatientCharges` exibam sempre "R$ 0,00" e "Nenhuma cobrança".
 
-### 1. usePaymentsData.ts
+### Causa Raiz
 
-Adicionar o campo `obligationName` ao interface Payment:
+A query atual busca apenas dados da tabela `patients` sem fazer join com a tabela `charges`. Não há integração entre pacientes e suas cobranças.
+
+### Solução Proposta
+
+#### Passo 1: Modificar a Query em `usePatientsData.ts`
+
+Alterar a query para incluir um join com a tabela `charges`:
+
+```typescript
+const { data, error } = await supabase
+  .from('patients')
+  .select(`
+    *,
+    charges(
+      id,
+      description,
+      amount,
+      status,
+      due_date,
+      payment_date
+    )
+  `)
+  .order('name');
+```
+
+#### Passo 2: Atualizar Interface `Patient`
+
+Adicionar campo para armazenar as cobranças do banco:
+
+```typescript
+export interface Patient {
+  // ... campos existentes
+  charges?: {
+    id: string;
+    description: string;
+    amount: number;
+    status: 'pending' | 'overdue' | 'paid';
+    due_date: string;
+    payment_date: string | null;
+  }[];
+}
+```
+
+#### Passo 3: Refatorar `toDisplayModel`
+
+Calcular valores financeiros e separar cobranças por tipo:
+
+```typescript
+function toDisplayModel(patient: Patient): PatientDisplayModel {
+  const charges = patient.charges || [];
+  const today = new Date();
+  
+  // Separar cobranças por status
+  const pendingCharges = charges
+    .filter(c => c.status !== 'paid')
+    .map(c => ({
+      id: c.id,
+      description: c.description,
+      dueDate: c.due_date,
+      value: Number(c.amount),
+    }));
+    
+  const receivedCharges = charges
+    .filter(c => c.status === 'paid')
+    .map(c => ({
+      id: c.id,
+      description: c.description,
+      paymentDate: c.payment_date || c.due_date,
+      value: Number(c.amount),
+    }));
+  
+  // Calcular totais
+  const toReceive = charges
+    .filter(c => c.status === 'pending')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+    
+  const overdue = charges
+    .filter(c => c.status === 'overdue')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+    
+  const received = charges
+    .filter(c => c.status === 'paid')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+
+  return {
+    id: patient.id,
+    name: patient.name,
+    cpf: patient.document || '',
+    email: patient.email,
+    phone: patient.phone,
+    type: patient.type,
+    tags: patient.is_foreign_payment ? ['Pagamento do exterior'] : [],
+    financial: {
+      toReceive,
+      overdue,
+      received,
+    },
+    pendingCharges,
+    receivedCharges,
+  };
+}
+```
+
+#### Passo 4: Invalidar Cache de Pacientes
+
+Atualizar `useChargesData.ts` para invalidar também a query de pacientes quando uma cobrança é modificada:
+
+```typescript
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['charges'] });
+  queryClient.invalidateQueries({ queryKey: ['dashboard-charges'] });
+  queryClient.invalidateQueries({ queryKey: ['patients'] }); // ADICIONAR
+},
+```
+
+### Arquivos Afetados
+
+| Arquivo | Ação |
+|---------|------|
+| `src/hooks/cliente/usePatientsData.ts` | Modificar query e toDisplayModel |
+| `src/hooks/cliente/useChargesData.ts` | Adicionar invalidação de cache |
+
+### Resultado Esperado
+
+- `PatientFinancialSummary` exibe valores reais de "A receber", "Vencidas" e "Recebido"
+- `PatientCharges` lista as cobranças pendentes e recebidas do paciente
+- Alterações em cobranças refletem imediatamente nos detalhes do paciente
+
+---
+
+## Bug 2: Erro de Runtime em PaymentCard (ALTA)
+
+### Problema Identificado
+
+Na linha 99 de `PaymentCard.tsx`, o código tenta criar um Date diretamente sem verificação de nulidade:
+
+```typescript
+{format(new Date(payment.dueDate), 'dd/MM/yyyy')}
+```
+
+Se `payment.dueDate` for `null` ou `undefined`, isso causa um erro de runtime que pode quebrar a aplicação.
+
+### Causa Raiz
+
+A interface `Payment` em `usePaymentsData.ts` define `dueDate` como `string`, mas documentos podem ter `due_at` nulo no banco de dados.
+
+### Solução Proposta
+
+#### Passo 1: Adicionar Verificação de Nulidade
+
+```typescript
+<div className="flex justify-between items-center">
+  <span className="text-sm text-muted-foreground">Vencimento:</span>
+  <span className="text-foreground">
+    {payment.dueDate 
+      ? format(new Date(payment.dueDate), 'dd/MM/yyyy')
+      : 'Sem vencimento'
+    }
+  </span>
+</div>
+```
+
+#### Passo 2: Atualizar Interface Payment (Opcional)
+
+Para maior clareza, atualizar o tipo em `usePaymentsData.ts`:
 
 ```typescript
 export interface Payment {
-  id: string;
-  title: string;
-  value: number | null;
-  dueDate: string;
-  status: PaymentStatus;
-  deliveredAt: string;
-  isNew: boolean;
-  filePath: string;
-  fileName: string;
-  competence: string;
-  viewedAt: string | null;
-  paidAt: string | null;
-  obligationName: string | null;  // NOVO CAMPO
+  // ... outros campos
+  dueDate: string | null;  // Tornar nullable explicitamente
 }
 ```
 
-Atualizar o mapeamento para incluir o nome da obrigacao:
+### Arquivos Afetados
 
-```typescript
-return {
-  // ... campos existentes
-  obligationName: doc.obligation?.name || null,
-};
-```
-
-### 2. Pagamentos.tsx
-
-Criar funcao helper para determinar a categoria correta:
-
-```typescript
-// Mapeamento de categorias
-const DARF_CATEGORY_ID = '5bdb11af-bb34-4eda-a864-c2a400f0e7a9';
-const INSS_CATEGORY_ID = '7993b8a5-3bbd-484e-ba43-c78bf1fe8c9b';
-
-function getExpenseCategoryId(obligationName: string | null): string | null {
-  if (!obligationName) return null;
-  
-  const normalizedName = obligationName.toUpperCase();
-  
-  if (normalizedName.includes('INSS')) {
-    return INSS_CATEGORY_ID;
-  }
-  
-  if (normalizedName.includes('DARF') || normalizedName.includes('CARNÊ')) {
-    return DARF_CATEGORY_ID;
-  }
-  
-  return null;
-}
-
-function getExpenseCategoryName(obligationName: string | null): string | null {
-  if (!obligationName) return null;
-  
-  const normalizedName = obligationName.toUpperCase();
-  
-  if (normalizedName.includes('INSS')) {
-    return 'INSS - Previdência Social';
-  }
-  
-  if (normalizedName.includes('DARF') || normalizedName.includes('CARNÊ')) {
-    return 'DARF Carnê-Leão';
-  }
-  
-  return null;
-}
-```
-
-Atualizar `handleConfirmPayment`:
-
-```typescript
-const handleConfirmPayment = async (paymentDate: Date, registerAsExpense: boolean) => {
-  if (!selectedPayment) return;
-  
-  setIsProcessing(true);
-  try {
-    await markAsPaid({ documentId: selectedPayment.id, paidAt: paymentDate });
-
-    if (registerAsExpense && selectedPayment.value) {
-      const categoryId = getExpenseCategoryId(selectedPayment.obligationName);
-      
-      if (!categoryId) {
-        toast.warning('Não foi possível identificar a categoria da despesa.');
-        // Ainda marca como pago, mas não registra despesa
-      } else {
-        const [competencyYear, competencyMonth] = selectedPayment.competence.split('-').map(Number);
-        
-        await createExpense.mutateAsync({
-          categoryId: categoryId,  // USA CATEGORIA DINAMICA
-          value: selectedPayment.value.toString(),
-          paymentDate: format(paymentDate, 'yyyy-MM-dd'),
-          isResidentialExpense: false,
-          competencyMonth,
-          competencyYear,
-          description: selectedPayment.title,
-        });
-      }
-    }
-
-    toast.success(
-      registerAsExpense 
-        ? 'Pagamento confirmado e despesa registrada!' 
-        : 'Pagamento confirmado!'
-    );
-    // ...
-  }
-};
-```
-
-### 3. MarkPaymentAsPaidDialog.tsx
-
-Atualizar props para receber o nome da categoria:
-
-```typescript
-interface MarkPaymentAsPaidDialogProps {
-  payment: Payment | null;
-  expenseCategoryName: string | null;  // NOVO PROP
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: (paymentDate: Date, registerAsExpense: boolean) => Promise<void>;
-  isLoading?: boolean;
-}
-```
-
-Atualizar o texto do checkbox para mostrar a categoria correta:
-
-```typescript
-<p className="text-xs text-muted-foreground">
-  O valor será registrado automaticamente na categoria 
-  "{expenseCategoryName || 'Não identificada'}"
-</p>
-```
-
-Se a categoria nao for identificada, desabilitar o checkbox:
-
-```typescript
-const canRegisterAsExpense = hasValue && !!expenseCategoryName;
-
-{hasValue && (
-  <div className="flex items-start space-x-3 pt-2">
-    <Checkbox
-      id="register-expense"
-      checked={registerAsExpense}
-      onCheckedChange={(checked) => setRegisterAsExpense(checked === true)}
-      disabled={!isDateAllowed || !canRegisterAsExpense}
-    />
-    <div className="space-y-1">
-      <Label>Registrar como despesa</Label>
-      <p className="text-xs text-muted-foreground">
-        {expenseCategoryName 
-          ? `O valor será registrado na categoria "${expenseCategoryName}"`
-          : 'Categoria não identificada - não é possível registrar como despesa'
-        }
-      </p>
-    </div>
-  </div>
-)}
-```
-
-## Arquivos a Modificar
-
-| Arquivo | Acao |
+| Arquivo | Ação |
 |---------|------|
-| `src/hooks/cliente/usePaymentsData.ts` | Adicionar campo `obligationName` ao Payment |
-| `src/pages/cliente/Pagamentos.tsx` | Adicionar logica de deteccao de categoria |
-| `src/components/cliente/pagamentos/MarkPaymentAsPaidDialog.tsx` | Receber e exibir nome da categoria |
+| `src/components/cliente/pagamentos/PaymentCard.tsx` | Adicionar verificação de null |
+| `src/hooks/cliente/usePaymentsData.ts` | Atualizar tipo (opcional) |
 
-## Fluxo Atualizado
+### Resultado Esperado
 
-1. Usuario clica "Pagar" no documento
-2. Sistema identifica o tipo: DARF ou INSS baseado no `obligationName`
-3. Dialog mostra a categoria que sera usada: "DARF Carne-Leao" ou "INSS - Previdencia Social"
-4. Usuario confirma
-5. Sistema registra despesa na categoria correta
+- Aplicação não quebra quando um documento não tem data de vencimento
+- Exibe "Sem vencimento" como fallback amigável
 
-## Validacoes
+---
 
-1. Se `obligationName` nao contem "INSS" nem "DARF/CARNE", nao permite registrar como despesa
-2. Checkbox de despesa so aparece se a categoria foi identificada
-3. Toast de warning se categoria nao identificada
+## Bug 3: Padding Duplicado no Dashboard (MÉDIA)
 
-## Extensibilidade
+### Problema Identificado
 
-A funcao `getExpenseCategoryId` pode ser facilmente estendida para suportar novos tipos de obrigacoes no futuro, bastando adicionar novas condicoes de mapeamento.
+O `Dashboard.tsx` aplica padding interno (`p-4 md:p-6`) na linha 24:
+
+```typescript
+<div className="p-4 md:p-6 space-y-6">
+```
+
+Enquanto o `ClienteLayout.tsx` já aplica padding no container do Outlet na linha 96:
+
+```typescript
+<div className="p-6">
+  <Outlet />
+</div>
+```
+
+Isso resulta em padding duplicado (p-6 + p-4/p-6 = 40-48px de padding).
+
+### Causa Raiz
+
+Falta de padronização entre o layout principal e as páginas internas sobre quem é responsável pelo espaçamento.
+
+### Solução Proposta (Opção Recomendada)
+
+Remover o padding do `Dashboard.tsx` e manter apenas no `ClienteLayout`:
+
+#### Modificar Dashboard.tsx
+
+```typescript
+// ANTES
+<div className="p-4 md:p-6 space-y-6">
+
+// DEPOIS
+<div className="space-y-6">
+```
+
+#### Verificar Outras Páginas
+
+Garantir que outras páginas da área do cliente também não tenham padding interno redundante:
+- `/cliente/receitas`
+- `/cliente/despesas`
+- `/cliente/pagamentos`
+- `/cliente/documentos`
+- `/cliente/comunicados`
+- `/cliente/pacientes`
+- `/cliente/perfil`
+
+### Arquivos Afetados
+
+| Arquivo | Ação |
+|---------|------|
+| `src/pages/cliente/Dashboard.tsx` | Remover padding interno |
+| Outras páginas em `/cliente/*` | Verificar e remover padding se necessário |
+
+### Resultado Esperado
+
+- Espaçamento consistente em todas as páginas do módulo cliente
+- Padding único gerenciado pelo `ClienteLayout`
+
+---
+
+## Resumo de Alterações por Arquivo
+
+| Arquivo | Bug | Complexidade |
+|---------|-----|--------------|
+| `src/hooks/cliente/usePatientsData.ts` | Bug 1 | Alta |
+| `src/hooks/cliente/useChargesData.ts` | Bug 1 | Baixa |
+| `src/components/cliente/pagamentos/PaymentCard.tsx` | Bug 2 | Baixa |
+| `src/pages/cliente/Dashboard.tsx` | Bug 3 | Baixa |
+
+## Ordem de Implementação Sugerida
+
+1. **Bug 2** (PaymentCard) - Correção rápida, previne crashes
+2. **Bug 3** (Dashboard padding) - Correção rápida, melhora visual
+3. **Bug 1** (Patient charges) - Mais complexa, requer refatoração
+
+## Testes Recomendados
+
+1. Navegar para `/cliente/pacientes` e verificar se cobranças aparecem
+2. Abrir `/cliente/pagamentos` e verificar se não há erros de console
+3. Verificar espaçamento em todas as páginas do módulo cliente
+4. Criar/editar cobrança e verificar atualização nos detalhes do paciente
