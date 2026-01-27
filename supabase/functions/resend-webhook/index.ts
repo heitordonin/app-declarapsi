@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
+import { Webhook } from 'https://esm.sh/svix@1.15.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,13 +21,52 @@ serve(async (req) => {
   }
 
   try {
+    const webhookSecret = Deno.env.get('RESEND_WEBHOOK_SECRET');
+    if (!webhookSecret) {
+      console.error('RESEND_WEBHOOK_SECRET not configured');
+      return new Response(
+        JSON.stringify({ error: 'Webhook secret not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verificar assinatura do webhook
+    const svixId = req.headers.get('svix-id');
+    const svixTimestamp = req.headers.get('svix-timestamp');
+    const svixSignature = req.headers.get('svix-signature');
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      console.error('Missing Svix headers');
+      return new Response(
+        JSON.stringify({ error: 'Missing webhook signature headers' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const rawBody = await req.text();
+    const wh = new Webhook(webhookSecret);
+    
+    let body: any;
+    try {
+      body = wh.verify(rawBody, {
+        'svix-id': svixId,
+        'svix-timestamp': svixTimestamp,
+        'svix-signature': svixSignature,
+      });
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const body = await req.json();
-    console.log('Received webhook event:', JSON.stringify(body, null, 2));
+    console.log('Received verified webhook event:', JSON.stringify(body, null, 2));
 
     const { type, data } = body;
 
