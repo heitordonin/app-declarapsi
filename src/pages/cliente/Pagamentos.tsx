@@ -11,8 +11,41 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-// ID da categoria "DARF Carnê-Leão"
+// IDs das categorias de despesas fiscais
 const DARF_CATEGORY_ID = '5bdb11af-bb34-4eda-a864-c2a400f0e7a9';
+const INSS_CATEGORY_ID = '7993b8a5-3bbd-484e-ba43-c78bf1fe8c9b';
+
+function getExpenseCategoryId(obligationName: string | null): string | null {
+  if (!obligationName) return null;
+  
+  const normalizedName = obligationName.toUpperCase();
+  
+  if (normalizedName.includes('INSS')) {
+    return INSS_CATEGORY_ID;
+  }
+  
+  if (normalizedName.includes('DARF') || normalizedName.includes('CARNÊ') || normalizedName.includes('CARNE')) {
+    return DARF_CATEGORY_ID;
+  }
+  
+  return null;
+}
+
+function getExpenseCategoryName(obligationName: string | null): string | null {
+  if (!obligationName) return null;
+  
+  const normalizedName = obligationName.toUpperCase();
+  
+  if (normalizedName.includes('INSS')) {
+    return 'INSS - Previdência Social';
+  }
+  
+  if (normalizedName.includes('DARF') || normalizedName.includes('CARNÊ') || normalizedName.includes('CARNE')) {
+    return 'DARF Carnê-Leão';
+  }
+  
+  return null;
+}
 
 export default function Pagamentos() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,25 +117,32 @@ export default function Pagamentos() {
 
       // Create expense if requested
       if (registerAsExpense && selectedPayment.value) {
-        // Extract competency from document's competence field (format: "yyyy-MM")
-        const [competencyYear, competencyMonth] = selectedPayment.competence.split('-').map(Number);
+        const categoryId = getExpenseCategoryId(selectedPayment.obligationName);
         
-        await createExpense.mutateAsync({
-          categoryId: DARF_CATEGORY_ID,
-          value: selectedPayment.value.toString(),
-          paymentDate: format(paymentDate, 'yyyy-MM-dd'),
-          isResidentialExpense: false,
-          competencyMonth,
-          competencyYear,
-          description: selectedPayment.title,
-        });
+        if (!categoryId) {
+          toast.warning('Pagamento confirmado, mas não foi possível identificar a categoria da despesa.');
+        } else {
+          // Extract competency from document's competence field (format: "yyyy-MM")
+          const [competencyYear, competencyMonth] = selectedPayment.competence.split('-').map(Number);
+          
+          await createExpense.mutateAsync({
+            categoryId: categoryId,
+            value: selectedPayment.value.toString(),
+            paymentDate: format(paymentDate, 'yyyy-MM-dd'),
+            isResidentialExpense: false,
+            competencyMonth,
+            competencyYear,
+            description: selectedPayment.title,
+          });
+          
+          toast.success('Pagamento confirmado e despesa registrada!');
+          setDialogOpen(false);
+          setSelectedPayment(null);
+          return;
+        }
       }
 
-      toast.success(
-        registerAsExpense 
-          ? 'Pagamento confirmado e despesa registrada!' 
-          : 'Pagamento confirmado!'
-      );
+      toast.success('Pagamento confirmado!');
       setDialogOpen(false);
       setSelectedPayment(null);
     } catch (error) {
@@ -180,6 +220,7 @@ export default function Pagamentos() {
       {/* Mark as Paid Dialog */}
       <MarkPaymentAsPaidDialog
         payment={selectedPayment}
+        expenseCategoryName={getExpenseCategoryName(selectedPayment?.obligationName ?? null)}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onConfirm={handleConfirmPayment}
