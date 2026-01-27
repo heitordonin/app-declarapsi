@@ -1,40 +1,53 @@
 
-# Atualizar Remetente de E-mails para noreply@declarapsi.com.br
+# Remover Metrica de Open Rate do Dashboard de E-mails
 
 ## Resumo
 
-Atualizar todas as Edge Functions que enviam e-mails para usar o novo dominio verificado `declarapsi.com.br` em vez do dominio de teste `onboarding@resend.dev`.
+Remover todas as referencias a "Taxa de Abertura" (Open Rate) e eventos "opened" do dashboard de e-mails, ja que o Open Tracking esta desabilitado no Resend e os dados seriam sempre zero.
 
-## Alteracoes Necessarias
+## Arquivos a Modificar
 
-Substituir o remetente em 4 arquivos:
+### 1. src/components/emails/EmailStatsTab.tsx
 
-| Arquivo | Funcao | De | Para |
-|---------|--------|----|----|
-| `process-email-queue/index.ts` | Fila de envio de documentos | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
-| `send-document-notification/index.ts` | Notificacao de documento | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
-| `send-due-reminders/index.ts` | Lembrete de vencimento | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
-| `send-welcome-email/index.ts` | Boas-vindas ao cliente | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
+**Remover:**
+- Import do icone `Eye` (linha 8)
+- KPI Card de "Taxa de Abertura" (linhas 52-57)
 
-## Codigo
+**Ajustar:**
+- Grid de KPIs de 4 para 3 colunas: `lg:grid-cols-4` para `lg:grid-cols-3`
 
-Em cada arquivo, a linha:
-```typescript
-from: 'Declara Psi <onboarding@resend.dev>',
-```
+### 2. src/hooks/contador/useEmailStats.ts
 
-Sera alterada para:
-```typescript
-from: 'Declara Psi <noreply@declarapsi.com.br>',
-```
+**Remover:**
+- Propriedade `openRate` da interface `EmailStats` (linha 8)
+- Cor `opened` do objeto `EMAIL_STATUS_COLORS` (linha 28)
+- Campo `opened` do objeto `dailyData` (linha 60)
+- Variavel `opened` e calculo de `openRate` (linhas 69, 74)
+- Propriedade `openRate` do retorno (linha 99)
 
-## Beneficios
+**Ajustar:**
+- Calculo de `deliveryRate` para usar apenas `delivered` (remover `+ opened`)
 
-1. **Profissionalismo**: E-mails enviados do proprio dominio da empresa
-2. **Entregabilidade**: Melhor reputacao de envio com dominio verificado
-3. **Isolamento**: Separacao clara dos eventos de e-mail deste sistema no Resend
-4. **Rastreabilidade**: Facilita identificar e-mails do Declara Psi no painel do Resend
+### 3. src/components/emails/EmailEvolutionChart.tsx
 
-## Observacao sobre Filtro de Eventos
+**Remover:**
+- Campo `opened` da interface de props (linha 10)
+- Cor `opened` do objeto `CHART_COLORS` (linha 19)
+- Label `opened` do objeto `STATUS_LABELS` (linha 27)
+- Barra `opened` do grafico (linha 63)
 
-Com o dominio dedicado, os eventos no Resend ficam naturalmente separados. Porem, o webhook ainda recebera eventos de outros sistemas da mesma conta. Se desejar filtro adicional, podemos implementar verificacao no webhook para ignorar eventos de outros dominios.
+### 4. src/components/emails/EmailDeliveryChart.tsx
+
+**Remover:**
+- Label `opened` do objeto `STATUS_LABELS` (linha 13)
+
+O grafico de pizza (EmailDeliveryChart) automaticamente nao mostrara "opened" pois os dados vem do backend e nao havera eventos desse tipo.
+
+## Resultado Visual
+
+Dashboard passara de 4 KPIs para 3:
+1. Total Enviados
+2. Taxa de Entrega
+3. Taxa de Falha
+
+O grafico de evolucao diaria mostrara apenas: Enviado, Entregue, Bounced e Falhou.
