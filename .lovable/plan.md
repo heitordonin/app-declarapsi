@@ -1,158 +1,83 @@
 
-# Sistema de Logs de E-mail para o Painel do Contador
+# Correção do Reenvio de Protocolo
 
-## Visao Geral
+## Problema Identificado
 
-Implementar uma nova pagina dedicada no painel do contador para monitoramento completo do sistema de e-mails, incluindo estatisticas, logs de eventos e gestao da fila de envio.
+O botão de reenviar protocolo em `/contador/protocolos` **NÃO envia e-mail**. Ele apenas atualiza o status do documento para "sent", mas não adiciona o documento na fila de e-mails (`email_queue`).
 
-## Nova Rota e Navegacao
+## Fluxo Atual (Incorreto)
 
-Adicionar nova pagina `/contador/emails` acessivel pelo menu lateral do contador com icone de MailCheck.
-
-## Estrutura da Pagina
-
-A pagina sera dividida em 3 abas (Tabs):
-
-### Aba 1: Dashboard de Estatisticas
-
-**KPIs em Cards:**
-- Total de E-mails Enviados (periodo selecionavel)
-- Taxa de Entrega (delivered + opened / total enviados)
-- Taxa de Abertura (opened / delivered)
-- Taxa de Falha (bounced + failed / total)
-
-**Graficos:**
-- Donut Chart: Distribuicao por status (sent, delivered, opened, bounced, failed)
-- Bar Chart: Evolucao diaria/semanal dos envios e status
-
-**Filtros:**
-- Seletor de periodo (ultimos 7 dias, 30 dias, mes especifico)
-- Filtro por cliente
-
-### Aba 2: Log de Eventos
-
-Tabela com todos os eventos registrados na tabela `email_events`:
-
-**Colunas:**
-- Data/Hora do Evento
-- Tipo de Evento (delivered, opened, bounced, clicked, spam)
-- Destinatario (email)
-- Documento Relacionado (se disponivel)
-- Cliente
-- Metadados (expansivel)
-
-**Funcionalidades:**
-- Paginacao
-- Filtro por tipo de evento
-- Filtro por destinatario
-- Busca por periodo
-
-### Aba 3: Fila de E-mails
-
-Tabela de monitoramento da tabela `email_queue`:
-
-**Colunas:**
-- Status (pending, processing, sent, failed)
-- Documento
-- Cliente
-- Tentativas (X de Y)
-- Proxima Tentativa
-- Erro (se houver)
-- Criado em
-
-**Acoes:**
-- Reprocessar manualmente (botao para itens failed)
-- Cancelar envio (para itens pending)
-
-**Badge de Alerta:**
-- Indicador visual quando houver itens na fila com status "failed"
-
-## Arquivos a Criar/Modificar
-
-### Novos Arquivos:
-1. `src/pages/contador/Emails.tsx` - Pagina principal com Tabs
-2. `src/components/emails/EmailStatsTab.tsx` - Dashboard de estatisticas
-3. `src/components/emails/EmailEventsTab.tsx` - Tabela de eventos
-4. `src/components/emails/EmailQueueTab.tsx` - Gestao da fila
-5. `src/components/emails/EmailDeliveryChart.tsx` - Grafico donut de status
-6. `src/components/emails/EmailEvolutionChart.tsx` - Grafico de evolucao temporal
-7. `src/hooks/contador/useEmailStats.ts` - Hook para estatisticas
-8. `src/hooks/contador/useEmailEvents.ts` - Hook para eventos
-9. `src/hooks/contador/useEmailQueue.ts` - Hook para fila
-
-### Modificar:
-1. `src/components/contador/ContadorSidebar.tsx` - Adicionar item "E-mails" no menu
-2. `src/App.tsx` - Adicionar rota `/contador/emails`
-
-## Detalhes Tecnicos
-
-### Queries de Estatisticas
-
-```sql
--- Total por delivery_state (documentos)
-SELECT delivery_state, COUNT(*) 
-FROM documents 
-WHERE deleted_at IS NULL 
-GROUP BY delivery_state;
-
--- Eventos por tipo
-SELECT event_type, COUNT(*) 
-FROM email_events 
-WHERE received_at >= [data_inicio]
-GROUP BY event_type;
-
--- Taxa de abertura por periodo
-SELECT 
-  DATE(received_at) as data,
-  event_type,
-  COUNT(*) as total
-FROM email_events
-WHERE received_at >= [data_inicio]
-GROUP BY DATE(received_at), event_type
-ORDER BY data;
+```text
+Botão Reenviar → Atualiza documents.delivery_state = 'sent' → FIM
+                 (Nenhum e-mail é enviado!)
 ```
 
-### Componentes Reutilizados
+## Fluxo Correto (Como Deveria Ser)
 
-- `KPICard` de `/components/relatorios/` para exibir metricas
-- `Table` components do shadcn/ui para tabelas
-- `Tabs` do shadcn/ui para navegacao entre abas
-- `PieChart` e `BarChart` do recharts para graficos
-- `Badge` para status visuais
-
-### Paleta de Cores para Status
-
-```javascript
-const emailStatusColors = {
-  sent: '#3b82f6',      // blue-500
-  delivered: '#06b6d4', // cyan-500  
-  opened: '#22c55e',    // green-500
-  bounced: '#ef4444',   // red-500
-  failed: '#dc2626',    // red-600
-  clicked: '#8b5cf6',   // violet-500
-  spam: '#f97316',      // orange-500
-};
+```text
+Botão Reenviar → Insere na email_queue → Cron processa → E-mail enviado → Webhook atualiza status
 ```
 
-### Seguranca (RLS)
+## Alteracoes Necessarias
 
-As tabelas `email_queue` e `email_events` ja possuem policies que permitem SELECT apenas para admins:
-- `email_queue`: "Admins can view email queue"
-- `email_events`: "Admins can view email events"
+### Arquivo: `src/components/protocolos/DocumentosTable.tsx`
 
-Nao sera necessario criar novas policies.
+Modificar a `resendMutation` para:
 
-## Fluxo de Implementacao
+1. Atualizar o `delivery_state` do documento para `'sent'`
+2. Resetar o campo `viewed_at` para `null` (indicando novo envio)
+3. **Inserir um novo registro na tabela `email_queue`** com status `'pending'`
 
-1. Criar hooks de dados (useEmailStats, useEmailEvents, useEmailQueue)
-2. Criar componentes de graficos (EmailDeliveryChart, EmailEvolutionChart)
-3. Criar componentes de tabs (EmailStatsTab, EmailEventsTab, EmailQueueTab)
-4. Criar pagina principal (Emails.tsx)
-5. Atualizar sidebar e rotas
-6. Testar integracao com dados reais
+### Codigo Corrigido
 
-## Observacoes
+A mutacao passara a:
 
-- A paginacao sera implementada client-side inicialmente, com opcao de cursor-based se necessario
-- Os graficos seguem o mesmo padrao visual da pagina de Relatorios existente
-- Responsividade mobile-first sera aplicada em todas as tabelas e graficos
+```typescript
+const resendMutation = useMutation({
+  mutationFn: async (documentId: string) => {
+    // 1. Atualizar documento
+    const { error: updateError } = await supabase
+      .from("documents")
+      .update({
+        delivery_state: "sent",
+        delivered_at: new Date().toISOString(),
+        viewed_at: null, // Resetar visualizacao
+      })
+      .eq("id", documentId);
+
+    if (updateError) throw updateError;
+
+    // 2. Adicionar na fila de e-mails
+    const { error: queueError } = await supabase
+      .from("email_queue")
+      .insert({
+        document_id: documentId,
+        status: "pending",
+      });
+
+    if (queueError) throw queueError;
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["documents"] });
+    queryClient.invalidateQueries({ queryKey: ["email-queue"] });
+    toast({
+      title: "Sucesso",
+      description: "Documento adicionado a fila de reenvio.",
+    });
+  },
+  // ... error handling
+});
+```
+
+## Comportamento Esperado Apos Correcao
+
+1. Usuario clica em "Reenviar"
+2. Documento tem status atualizado para "Enviado"
+3. Novo registro criado em `email_queue` com status "pending"
+4. Cron job (a cada minuto) processa a fila
+5. E-mail e enviado via Resend
+6. Webhook atualiza status para "Entregue" ou "Aberto"
+
+## Observacao Sobre RLS
+
+A tabela `email_queue` ja possui policy que permite admins visualizar e uma policy "System can manage" que permite INSERT. A operacao sera executada pelo usuario autenticado com role admin, portanto funcionara corretamente.
