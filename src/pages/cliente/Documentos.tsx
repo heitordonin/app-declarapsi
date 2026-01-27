@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DocumentsList } from '@/components/cliente/documentos/DocumentsList';
 import { useDocumentsData } from '@/hooks/cliente/useDocumentsData';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/cliente/EmptyState';
 
 export default function Documentos() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,7 +20,7 @@ export default function Documentos() {
   }, [documents, searchQuery]);
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-4">
       {/* Header */}
       <h1 className="text-2xl font-bold text-foreground">Documentos Permanentes</h1>
 
@@ -42,12 +43,11 @@ export default function Documentos() {
           ))}
         </div>
       ) : documents.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border rounded-lg">
-          <p>Nenhum documento permanente disponível.</p>
-          <p className="text-sm mt-1">
-            Seus documentos aparecerão aqui quando forem enviados.
-          </p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="Nenhum documento permanente"
+          description="Seus documentos aparecerão aqui quando forem enviados."
+        />
       ) : (
         <DocumentsList documents={filteredDocuments} onDownload={downloadDocument} />
       )}

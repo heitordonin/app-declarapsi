@@ -1,6 +1,7 @@
-import { Search } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '../EmptyState';
 import { PatientDisplayModel } from '@/hooks/cliente/usePatientsData';
 import { cn } from '@/lib/utils';
 
@@ -34,15 +35,18 @@ export function PatientsList({
           placeholder="Buscar por nome ou CPF..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9"
+          className="pl-10"
         />
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-2">
         {patients.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhum paciente encontrado
-          </p>
+          <EmptyState
+            icon={Users}
+            title="Nenhum paciente"
+            description="Adicione seu primeiro paciente."
+            className="py-8"
+          />
         ) : (
           patients.map((patient) => (
             <button

@@ -62,7 +62,7 @@ export default function Perfil() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Perfil</h1>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

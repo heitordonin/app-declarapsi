@@ -21,7 +21,7 @@ export default function Configuracoes() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
       
       <div className="space-y-4">
