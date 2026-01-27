@@ -69,7 +69,7 @@ export default function Pagamentos() {
     },
   });
 
-  const { payments, isLoading, downloadDocument, markAsPaid } = usePaymentsData(client?.id);
+  const { payments, isLoading, downloadDocument, markAsPaid, unmarkAsPaid, isUnmarkingAsPaid } = usePaymentsData(client?.id);
   const { createExpense } = useExpensesData();
 
   const filteredPayments = useMemo(() => {
@@ -105,6 +105,10 @@ export default function Pagamentos() {
   const handleOpenMarkAsPaidDialog = (payment: Payment) => {
     setSelectedPayment(payment);
     setDialogOpen(true);
+  };
+
+  const handleUnmarkAsPaid = async (payment: Payment) => {
+    await unmarkAsPaid(payment.id);
   };
 
   const handleConfirmPayment = async (paymentDate: Date, registerAsExpense: boolean) => {
@@ -211,6 +215,8 @@ export default function Pagamentos() {
                 payment={payment}
                 onDownload={downloadDocument}
                 onMarkAsPaid={handleOpenMarkAsPaidDialog}
+                onUnmarkAsPaid={handleUnmarkAsPaid}
+                isUnmarking={isUnmarkingAsPaid}
               />
             ))
           )}

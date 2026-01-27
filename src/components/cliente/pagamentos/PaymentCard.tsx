@@ -1,10 +1,11 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Download, Loader2, CheckCircle2 } from 'lucide-react';
+import { Download, Loader2, CheckCircle2, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import type { Payment } from '@/hooks/cliente/usePaymentsData';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -13,6 +14,8 @@ interface PaymentCardProps {
   payment: Payment;
   onDownload: (payment: Payment) => Promise<boolean>;
   onMarkAsPaid: (payment: Payment) => void;
+  onUnmarkAsPaid: (payment: Payment) => Promise<void>;
+  isUnmarking?: boolean;
 }
 
 const statusConfig = {
@@ -22,8 +25,9 @@ const statusConfig = {
   paid: { label: 'Pago', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
 };
 
-export function PaymentCard({ payment, onDownload, onMarkAsPaid }: PaymentCardProps) {
+export function PaymentCard({ payment, onDownload, onMarkAsPaid, onUnmarkAsPaid, isUnmarking }: PaymentCardProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showUnmarkDialog, setShowUnmarkDialog] = useState(false);
   const config = statusConfig[payment.status];
   const isPaid = payment.status === 'paid';
   
@@ -43,6 +47,15 @@ export function PaymentCard({ payment, onDownload, onMarkAsPaid }: PaymentCardPr
       toast.error('Erro ao baixar documento');
     } finally {
       setIsDownloading(false);
+    }
+  };
+  const handleUnmarkAsPaid = async () => {
+    try {
+      await onUnmarkAsPaid(payment);
+      toast.success('Pagamento desmarcado!');
+      setShowUnmarkDialog(false);
+    } catch (error) {
+      toast.error('Erro ao desmarcar pagamento');
     }
   };
 
@@ -103,14 +116,14 @@ export function PaymentCard({ payment, onDownload, onMarkAsPaid }: PaymentCardPr
         {/* Actions */}
         <div className={cn(
           "flex gap-2",
-          isPaid ? "justify-center" : "justify-between"
+          isPaid ? "flex-col sm:flex-row" : "justify-between"
         )}>
           <Button 
             size="default"
             variant="outline"
             onClick={handleDownload}
             disabled={isDownloading}
-            className={cn("h-11 flex-1", isPaid && "max-w-[200px]")}
+            className="h-11 flex-1"
           >
             {isDownloading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -129,6 +142,41 @@ export function PaymentCard({ payment, onDownload, onMarkAsPaid }: PaymentCardPr
               <CheckCircle2 className="h-4 w-4" />
               <span className="ml-2">Pagar</span>
             </Button>
+          )}
+
+          {isPaid && (
+            <AlertDialog open={showUnmarkDialog} onOpenChange={setShowUnmarkDialog}>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  size="default"
+                  variant="ghost"
+                  className="h-11 flex-1 text-muted-foreground hover:text-foreground"
+                  disabled={isUnmarking}
+                >
+                  {isUnmarking ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Undo2 className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">Desfazer</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desmarcar pagamento?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O pagamento "{payment.title}" será desmarcado como pago. 
+                    Se uma despesa foi criada automaticamente, ela não será removida.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleUnmarkAsPaid} disabled={isUnmarking}>
+                    {isUnmarking ? 'Desmarcando...' : 'Confirmar'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </CardContent>
