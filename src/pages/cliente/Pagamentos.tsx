@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { EmptyState } from '@/components/cliente/EmptyState';
 import { MonthSelector } from '@/components/cliente/pagamentos/MonthSelector';
 import { PaymentCard } from '@/components/cliente/pagamentos/PaymentCard';
 import { MarkPaymentAsPaidDialog } from '@/components/cliente/pagamentos/MarkPaymentAsPaidDialog';
@@ -158,7 +159,7 @@ export default function Pagamentos() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-bold text-foreground">A pagar</h1>
@@ -171,10 +172,10 @@ export default function Pagamentos() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar pagamentos"
-          className="pr-10"
+          placeholder="Buscar pagamentos..."
+          className="pl-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -203,13 +204,17 @@ export default function Pagamentos() {
         </div>
       ) : (
         /* Payments List */
-        <div className="space-y-3">
-          {filteredPayments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Nenhum pagamento encontrado
-            </div>
-          ) : (
-            filteredPayments.map((payment) => (
+        filteredPayments.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="Nenhum pagamento encontrado"
+            description={selectedMonth 
+              ? "Não há pagamentos para este período." 
+              : "Seus documentos a pagar aparecerão aqui."}
+          />
+        ) : (
+          <div className="space-y-3">
+            {filteredPayments.map((payment) => (
               <PaymentCard 
                 key={payment.id} 
                 payment={payment}
@@ -218,9 +223,9 @@ export default function Pagamentos() {
                 onUnmarkAsPaid={handleUnmarkAsPaid}
                 isUnmarking={isUnmarkingAsPaid}
               />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )
       )}
 
       {/* Mark as Paid Dialog */}

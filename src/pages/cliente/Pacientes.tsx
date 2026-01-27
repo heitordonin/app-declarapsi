@@ -78,7 +78,7 @@ export default function Pacientes() {
         "flex items-center justify-between p-4 md:p-6 pb-0 md:pb-0",
         mobileView === 'details' && isMobile && "hidden"
       )}>
-        <h1 className="text-xl font-semibold text-foreground">Pacientes</h1>
+        <h1 className="text-2xl font-bold text-foreground">Pacientes</h1>
         <Button onClick={() => setShowAddPanel(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
           Novo Paciente

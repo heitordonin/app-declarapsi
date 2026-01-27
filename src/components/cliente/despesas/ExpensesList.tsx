@@ -1,5 +1,7 @@
+import { Receipt } from 'lucide-react';
 import { ExpensesTable } from './ExpensesTable';
 import { ExpenseCard } from './ExpenseCard';
+import { EmptyState } from '../EmptyState';
 import type { Expense } from '@/hooks/cliente/useExpensesData';
 
 interface ExpensesListProps {
@@ -11,9 +13,11 @@ interface ExpensesListProps {
 export function ExpensesList({ expenses, onEdit, onDelete }: ExpensesListProps) {
   if (expenses.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        Nenhuma despesa encontrada
-      </div>
+      <EmptyState
+        icon={Receipt}
+        title="Nenhuma despesa"
+        description="Registre sua primeira despesa clicando no botão acima."
+      />
     );
   }
 

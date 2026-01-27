@@ -20,7 +20,7 @@ export default function Comunicados() {
   }, [communications, searchQuery]);
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-4">
       {/* Header */}
       <h1 className="text-2xl font-bold text-foreground">Comunicados</h1>
 

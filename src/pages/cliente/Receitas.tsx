@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChargesList } from '@/components/cliente/receitas/ChargesList';
@@ -123,9 +123,10 @@ export default function Receitas() {
   const patientsForFilters = rawPatients.map(p => ({ id: p.id, name: p.name }));
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      {/* Botão Nova Cobrança */}
-      <div className="flex justify-start">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Receitas</h1>
         <Button onClick={() => setShowAddPanel(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Cobrança
@@ -153,14 +154,23 @@ export default function Receitas() {
         />
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
       {/* Lista de Cobranças */}
-      <ChargesList 
-        charges={filteredCharges}
-        onMarkAsPaid={openPayDialog}
-        onMarkAsUnpaid={handleMarkAsUnpaid}
-        onEdit={openEditPanel}
-        onDelete={handleDeleteCharge}
-      />
+      {!isLoading && (
+        <ChargesList 
+          charges={filteredCharges}
+          onMarkAsPaid={openPayDialog}
+          onMarkAsUnpaid={handleMarkAsUnpaid}
+          onEdit={openEditPanel}
+          onDelete={handleDeleteCharge}
+        />
+      )}
 
       {/* Painel de Nova Cobrança */}
       <AddChargePanel
