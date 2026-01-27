@@ -17,6 +17,7 @@ export interface Payment {
   competence: string;
   viewedAt: string | null;
   paidAt: string | null;
+  obligationName: string | null;
 }
 
 const getPaymentStatus = (dueAt: Date, viewedAt: string | null, paidAt: string | null): PaymentStatus => {
@@ -72,6 +73,7 @@ export function usePaymentsData(clientId?: string) {
           competence: doc.competence,
           viewedAt: doc.viewed_at,
           paidAt: doc.paid_at,
+          obligationName: doc.obligation?.name || null,
         };
       });
     },

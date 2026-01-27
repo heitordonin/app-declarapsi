@@ -17,6 +17,7 @@ import type { Payment } from '@/hooks/cliente/usePaymentsData';
 
 interface MarkPaymentAsPaidDialogProps {
   payment: Payment | null;
+  expenseCategoryName: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (paymentDate: Date, registerAsExpense: boolean) => Promise<void>;
@@ -25,6 +26,7 @@ interface MarkPaymentAsPaidDialogProps {
 
 export function MarkPaymentAsPaidDialog({
   payment,
+  expenseCategoryName,
   open,
   onOpenChange,
   onConfirm,
@@ -37,6 +39,7 @@ export function MarkPaymentAsPaidDialog({
 
   const isDateAllowed = paymentDate ? canMarkAsPaidOnDate(paymentDate) : false;
   const hasValue = payment?.value !== null && payment?.value !== undefined && payment?.value > 0;
+  const canRegisterAsExpense = hasValue && !!expenseCategoryName;
 
   const handleConfirm = async () => {
     if (!paymentDate || !isDateAllowed) return;
@@ -123,19 +126,25 @@ export function MarkPaymentAsPaidDialog({
         <div className="flex items-start space-x-3 pt-2">
           <Checkbox
             id="register-expense"
-            checked={registerAsExpense}
+            checked={registerAsExpense && canRegisterAsExpense}
             onCheckedChange={(checked) => setRegisterAsExpense(checked === true)}
-            disabled={!isDateAllowed}
+            disabled={!isDateAllowed || !canRegisterAsExpense}
           />
           <div className="space-y-1">
             <Label 
               htmlFor="register-expense" 
-              className="text-sm font-medium leading-none cursor-pointer"
+              className={cn(
+                "text-sm font-medium leading-none",
+                canRegisterAsExpense ? "cursor-pointer" : "text-muted-foreground"
+              )}
             >
               Registrar como despesa
             </Label>
             <p className="text-xs text-muted-foreground">
-              O valor será registrado automaticamente na categoria "DARF Carnê-Leão"
+              {expenseCategoryName 
+                ? `O valor será registrado na categoria "${expenseCategoryName}"`
+                : 'Categoria não identificada - não é possível registrar como despesa'
+              }
             </p>
           </div>
         </div>
