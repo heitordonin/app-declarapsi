@@ -13,9 +13,10 @@ import type { Document } from '@/hooks/cliente/useDocumentsData';
 
 interface DocumentsTableProps {
   documents: Document[];
+  onDownload: (document: Document) => Promise<boolean>;
 }
 
-export function DocumentsTable({ documents }: DocumentsTableProps) {
+export function DocumentsTable({ documents, onDownload }: DocumentsTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -35,10 +36,10 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
               </div>
             </TableCell>
             <TableCell className="text-muted-foreground">
-              {format(new Date(document.createdAt), 'dd/MM/yyyy')}
+              {format(new Date(document.uploaded_at), 'dd/MM/yyyy')}
             </TableCell>
             <TableCell>
-              <DocumentActionsMenu documentId={document.id} />
+              <DocumentActionsMenu document={document} onDownload={onDownload} />
             </TableCell>
           </TableRow>
         ))}

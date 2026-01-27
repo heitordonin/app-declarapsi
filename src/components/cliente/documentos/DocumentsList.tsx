@@ -6,9 +6,10 @@ import type { Document } from '@/hooks/cliente/useDocumentsData';
 
 interface DocumentsListProps {
   documents: Document[];
+  onDownload: (document: Document) => Promise<boolean>;
 }
 
-export function DocumentsList({ documents }: DocumentsListProps) {
+export function DocumentsList({ documents, onDownload }: DocumentsListProps) {
   if (documents.length === 0) {
     return (
       <EmptyState
@@ -23,13 +24,13 @@ export function DocumentsList({ documents }: DocumentsListProps) {
     <>
       {/* Desktop: Table */}
       <div className="hidden md:block">
-        <DocumentsTable documents={documents} />
+        <DocumentsTable documents={documents} onDownload={onDownload} />
       </div>
 
       {/* Mobile: Cards */}
       <div className="md:hidden space-y-3">
         {documents.map((document) => (
-          <DocumentCard key={document.id} document={document} />
+          <DocumentCard key={document.id} document={document} onDownload={onDownload} />
         ))}
       </div>
     </>

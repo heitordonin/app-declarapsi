@@ -3,10 +3,11 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DocumentsList } from '@/components/cliente/documentos/DocumentsList';
 import { useDocumentsData } from '@/hooks/cliente/useDocumentsData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Documentos() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { documents } = useDocumentsData();
+  const { documents, isLoading, downloadDocument } = useDocumentsData();
 
   const filteredDocuments = useMemo(() => {
     if (!searchQuery) return documents;
@@ -34,7 +35,22 @@ export default function Documentos() {
       </div>
 
       {/* Documents List */}
-      <DocumentsList documents={filteredDocuments} />
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      ) : documents.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border rounded-lg">
+          <p>Nenhum documento permanente disponível.</p>
+          <p className="text-sm mt-1">
+            Seus documentos aparecerão aqui quando forem enviados.
+          </p>
+        </div>
+      ) : (
+        <DocumentsList documents={filteredDocuments} onDownload={downloadDocument} />
+      )}
     </div>
   );
 }
