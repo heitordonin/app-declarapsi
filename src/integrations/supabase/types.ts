@@ -467,6 +467,53 @@ export type Database = {
         }
         Relationships: []
       }
+      email_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          document_id: string
+          email_id: string | null
+          error_message: string | null
+          id: string
+          max_attempts: number
+          next_retry_at: string | null
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          document_id: string
+          email_id?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          next_retry_at?: string | null
+          processed_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          document_id?: string
+          email_id?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          next_retry_at?: string | null
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           code: string
@@ -1036,7 +1083,7 @@ export type Database = {
       charge_status: "pending" | "overdue" | "paid"
       client_status: "active" | "archived"
       created_via: "manual" | "invite_link"
-      delivery_state: "sent" | "delivered" | "bounced" | "failed"
+      delivery_state: "sent" | "delivered" | "bounced" | "failed" | "opened"
       email_event_type:
         | "sent"
         | "delivered"
@@ -1184,7 +1231,7 @@ export const Constants = {
       charge_status: ["pending", "overdue", "paid"],
       client_status: ["active", "archived"],
       created_via: ["manual", "invite_link"],
-      delivery_state: ["sent", "delivered", "bounced", "failed"],
+      delivery_state: ["sent", "delivered", "bounced", "failed", "opened"],
       email_event_type: [
         "sent",
         "delivered",
