@@ -1,256 +1,158 @@
 
+# Sistema de Logs de E-mail para o Painel do Contador
 
-# Plano: Criar Módulo de Documentos Permanentes no Painel do Contador
+## Visao Geral
 
-## Contexto
+Implementar uma nova pagina dedicada no painel do contador para monitoramento completo do sistema de e-mails, incluindo estatisticas, logs de eventos e gestao da fila de envio.
 
-O módulo `/cliente/documentos` exibe "Documentos Permanentes" (Contrato Social, Alvará, etc.), mas:
-- Usa dados mock (não há integração com o banco de dados)
-- O contador não tem onde fazer upload desses documentos
-- A tabela `documents` atual é específica para documentos de obrigações (com campos `obligation_id`, `competence`, `due_at`)
+## Nova Rota e Navegacao
 
-## Solucao Proposta
+Adicionar nova pagina `/contador/emails` acessivel pelo menu lateral do contador com icone de MailCheck.
 
-Criar uma **nova tabela `permanent_documents`** para documentos permanentes e adicionar o módulo de gerenciamento no painel do contador.
+## Estrutura da Pagina
 
----
+A pagina sera dividida em 3 abas (Tabs):
 
-## Arquitetura
+### Aba 1: Dashboard de Estatisticas
 
-```text
-+---------------------------+     +----------------------------+
-|  Contador                 |     |  Cliente                   |
-|  /contador/documentos     |     |  /cliente/documentos       |
-+---------------------------+     +----------------------------+
-|  - Selecionar cliente     |     |  - Visualizar documentos   |
-|  - Fazer upload           |     |  - Baixar documentos       |
-|  - Editar/Excluir         |     |  (somente leitura)         |
-+---------------------------+     +----------------------------+
-            |                               |
-            v                               v
-      +------------------------------------------+
-      |      Tabela: permanent_documents         |
-      |------------------------------------------|
-      |  id, org_id, client_id, name,            |
-      |  file_path, file_name, uploaded_by,      |
-      |  uploaded_at, viewed_at                  |
-      +------------------------------------------+
-```
+**KPIs em Cards:**
+- Total de E-mails Enviados (periodo selecionavel)
+- Taxa de Entrega (delivered + opened / total enviados)
+- Taxa de Abertura (opened / delivered)
+- Taxa de Falha (bounced + failed / total)
 
----
+**Graficos:**
+- Donut Chart: Distribuicao por status (sent, delivered, opened, bounced, failed)
+- Bar Chart: Evolucao diaria/semanal dos envios e status
 
-## Alteracoes no Banco de Dados
+**Filtros:**
+- Seletor de periodo (ultimos 7 dias, 30 dias, mes especifico)
+- Filtro por cliente
 
-### 1. Nova Tabela `permanent_documents`
+### Aba 2: Log de Eventos
 
-```sql
-CREATE TABLE permanent_documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id UUID NOT NULL,
-  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,                    -- Nome amigável (ex: "Contrato Social")
-  file_path TEXT NOT NULL,               -- Caminho no storage
-  file_name TEXT NOT NULL,               -- Nome original do arquivo
-  uploaded_by UUID NOT NULL,             -- Quem fez upload
-  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  viewed_at TIMESTAMPTZ,                 -- Quando o cliente visualizou
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+Tabela com todos os eventos registrados na tabela `email_events`:
 
--- RLS Policies
-ALTER TABLE permanent_documents ENABLE ROW LEVEL SECURITY;
+**Colunas:**
+- Data/Hora do Evento
+- Tipo de Evento (delivered, opened, bounced, clicked, spam)
+- Destinatario (email)
+- Documento Relacionado (se disponivel)
+- Cliente
+- Metadados (expansivel)
 
--- Admins podem gerenciar todos os documentos da org
-CREATE POLICY "Admins can manage permanent documents"
-ON permanent_documents FOR ALL
-USING (org_id = get_user_org(auth.uid()) AND has_role(auth.uid(), 'admin'));
+**Funcionalidades:**
+- Paginacao
+- Filtro por tipo de evento
+- Filtro por destinatario
+- Busca por periodo
 
--- Clientes podem visualizar seus documentos
-CREATE POLICY "Clients can view their permanent documents"
-ON permanent_documents FOR SELECT
-USING (client_id IN (SELECT id FROM clients WHERE user_id = auth.uid()));
+### Aba 3: Fila de E-mails
 
--- Clientes podem atualizar viewed_at
-CREATE POLICY "Clients can mark permanent documents as viewed"
-ON permanent_documents FOR UPDATE
-USING (client_id IN (SELECT id FROM clients WHERE user_id = auth.uid()));
-```
+Tabela de monitoramento da tabela `email_queue`:
 
-### 2. Policies de Storage
+**Colunas:**
+- Status (pending, processing, sent, failed)
+- Documento
+- Cliente
+- Tentativas (X de Y)
+- Proxima Tentativa
+- Erro (se houver)
+- Criado em
 
-Adicionar policies no bucket `documents` para permitir upload de documentos permanentes na pasta `permanent/`:
+**Acoes:**
+- Reprocessar manualmente (botao para itens failed)
+- Cancelar envio (para itens pending)
 
-```sql
-CREATE POLICY "Admins can upload permanent documents"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'documents' AND
-  (storage.foldername(name))[1] = 'permanent' AND
-  has_role(auth.uid(), 'admin')
-);
-```
-
----
+**Badge de Alerta:**
+- Indicador visual quando houver itens na fila com status "failed"
 
 ## Arquivos a Criar/Modificar
 
-### Frontend - Painel do Contador
+### Novos Arquivos:
+1. `src/pages/contador/Emails.tsx` - Pagina principal com Tabs
+2. `src/components/emails/EmailStatsTab.tsx` - Dashboard de estatisticas
+3. `src/components/emails/EmailEventsTab.tsx` - Tabela de eventos
+4. `src/components/emails/EmailQueueTab.tsx` - Gestao da fila
+5. `src/components/emails/EmailDeliveryChart.tsx` - Grafico donut de status
+6. `src/components/emails/EmailEvolutionChart.tsx` - Grafico de evolucao temporal
+7. `src/hooks/contador/useEmailStats.ts` - Hook para estatisticas
+8. `src/hooks/contador/useEmailEvents.ts` - Hook para eventos
+9. `src/hooks/contador/useEmailQueue.ts` - Hook para fila
 
-| Arquivo | Acao | Descricao |
-|---------|------|-----------|
-| `src/pages/contador/DocumentosPermanentes.tsx` | Criar | Página principal do módulo |
-| `src/components/contador/documentos/DocumentosTable.tsx` | Criar | Tabela de documentos por cliente |
-| `src/components/contador/documentos/UploadDocumentDialog.tsx` | Criar | Dialog para upload de documento |
-| `src/components/contador/documentos/EditDocumentDialog.tsx` | Criar | Dialog para editar nome do documento |
-| `src/hooks/contador/usePermanentDocuments.ts` | Criar | Hook para gerenciar documentos permanentes |
-| `src/components/contador/ContadorSidebar.tsx` | Modificar | Adicionar item "Documentos" no menu |
-| `src/App.tsx` | Modificar | Adicionar rota `/contador/documentos` |
-
-### Frontend - Painel do Cliente
-
-| Arquivo | Acao | Descricao |
-|---------|------|-----------|
-| `src/hooks/cliente/useDocumentsData.ts` | Modificar | Integrar com banco real (remover mock) |
-| `src/components/cliente/documentos/DocumentActionsMenu.tsx` | Modificar | Implementar download/visualização real |
-| `src/pages/cliente/Documentos.tsx` | Modificar | Adicionar loading state |
-
----
-
-## Interface do Contador
-
-### Tela Principal (`/contador/documentos`)
-
-```text
-+-------------------------------------------------------+
-|  Documentos Permanentes                    [+ Novo]   |
-+-------------------------------------------------------+
-|  Cliente: [Select Cliente v]                          |
-+-------------------------------------------------------+
-|  DOCUMENTO              ENVIADO EM    VISUALIZADO    |
-|  -----------------------------------------------     |
-|  Contrato Social        15/01/2025    Sim            |
-|  Alvará de Funcionamento 10/02/2025   Não            |
-|  CNPJ - Cartão          20/03/2025    Sim            |
-+-------------------------------------------------------+
-```
-
-### Dialog de Upload
-
-```text
-+----------------------------------------+
-|  Novo Documento Permanente             |
-+----------------------------------------+
-|  Cliente: [Select Cliente]             |
-|  Nome do documento: [                ] |
-|  Arquivo: [Selecionar arquivo...]      |
-|                                        |
-|  [Cancelar]            [Fazer Upload]  |
-+----------------------------------------+
-```
-
----
-
-## Fluxo de Uso
-
-1. **Contador acessa** `/contador/documentos`
-2. **Seleciona cliente** no dropdown
-3. **Clica em "+ Novo"** para abrir dialog de upload
-4. **Preenche nome** e **seleciona arquivo**
-5. **Arquivo é salvo** no storage em `documents/permanent/{org_id}/{client_id}/{arquivo}`
-6. **Registro criado** na tabela `permanent_documents`
-7. **Cliente visualiza** em `/cliente/documentos`
-8. **Ao baixar**, campo `viewed_at` é atualizado
-
----
+### Modificar:
+1. `src/components/contador/ContadorSidebar.tsx` - Adicionar item "E-mails" no menu
+2. `src/App.tsx` - Adicionar rota `/contador/emails`
 
 ## Detalhes Tecnicos
 
-### Hook `usePermanentDocuments`
+### Queries de Estatisticas
 
-```typescript
-// Buscar documentos por cliente
-const { data, isLoading } = useQuery({
-  queryKey: ['permanent-documents', clientId],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from('permanent_documents')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('uploaded_at', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-  enabled: !!clientId
-});
+```sql
+-- Total por delivery_state (documentos)
+SELECT delivery_state, COUNT(*) 
+FROM documents 
+WHERE deleted_at IS NULL 
+GROUP BY delivery_state;
 
-// Upload de documento
-const uploadMutation = useMutation({
-  mutationFn: async ({ clientId, name, file }) => {
-    // 1. Upload para storage
-    const path = `permanent/${orgId}/${clientId}/${file.name}`;
-    await supabase.storage.from('documents').upload(path, file);
-    
-    // 2. Criar registro
-    await supabase.from('permanent_documents').insert({
-      org_id: orgId,
-      client_id: clientId,
-      name,
-      file_path: path,
-      file_name: file.name,
-      uploaded_by: userId
-    });
-  }
-});
+-- Eventos por tipo
+SELECT event_type, COUNT(*) 
+FROM email_events 
+WHERE received_at >= [data_inicio]
+GROUP BY event_type;
+
+-- Taxa de abertura por periodo
+SELECT 
+  DATE(received_at) as data,
+  event_type,
+  COUNT(*) as total
+FROM email_events
+WHERE received_at >= [data_inicio]
+GROUP BY DATE(received_at), event_type
+ORDER BY data;
 ```
 
-### Integracao no Cliente
+### Componentes Reutilizados
 
-```typescript
-// useDocumentsData.ts - Versão real
-export function useDocumentsData() {
-  const { data: client } = useClientId();
-  
-  const { data, isLoading } = useQuery({
-    queryKey: ['permanent-documents', client?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('permanent_documents')
-        .select('*')
-        .eq('client_id', client.id)
-        .order('uploaded_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!client?.id
-  });
-  
-  return { documents: data ?? [], isLoading };
-}
+- `KPICard` de `/components/relatorios/` para exibir metricas
+- `Table` components do shadcn/ui para tabelas
+- `Tabs` do shadcn/ui para navegacao entre abas
+- `PieChart` e `BarChart` do recharts para graficos
+- `Badge` para status visuais
+
+### Paleta de Cores para Status
+
+```javascript
+const emailStatusColors = {
+  sent: '#3b82f6',      // blue-500
+  delivered: '#06b6d4', // cyan-500  
+  opened: '#22c55e',    // green-500
+  bounced: '#ef4444',   // red-500
+  failed: '#dc2626',    // red-600
+  clicked: '#8b5cf6',   // violet-500
+  spam: '#f97316',      // orange-500
+};
 ```
 
----
+### Seguranca (RLS)
 
-## Seguranca
+As tabelas `email_queue` e `email_events` ja possuem policies que permitem SELECT apenas para admins:
+- `email_queue`: "Admins can view email queue"
+- `email_events`: "Admins can view email events"
 
-| Aspecto | Implementacao |
-|---------|---------------|
-| Isolamento por Org | RLS policy com `org_id = get_user_org(auth.uid())` |
-| Acesso Cliente | Apenas visualização dos próprios documentos |
-| Acesso Admin | CRUD completo para documentos da org |
-| Storage | Policies específicas para pasta `permanent/` |
+Nao sera necessario criar novas policies.
 
----
+## Fluxo de Implementacao
 
-## Resultado Esperado
+1. Criar hooks de dados (useEmailStats, useEmailEvents, useEmailQueue)
+2. Criar componentes de graficos (EmailDeliveryChart, EmailEvolutionChart)
+3. Criar componentes de tabs (EmailStatsTab, EmailEventsTab, EmailQueueTab)
+4. Criar pagina principal (Emails.tsx)
+5. Atualizar sidebar e rotas
+6. Testar integracao com dados reais
 
-**Antes:**
-- Cliente vê dados mock em `/cliente/documentos`
-- Contador não tem como enviar documentos permanentes
-- Documentos permanentes não são persistidos
+## Observacoes
 
-**Depois:**
-- Contador acessa `/contador/documentos` e faz upload de documentos
-- Cliente visualiza e baixa os documentos reais
-- Notificação visual quando há novos documentos (badge no menu)
-- Histórico de visualização mantido
-
+- A paginacao sera implementada client-side inicialmente, com opcao de cursor-based se necessario
+- Os graficos seguem o mesmo padrao visual da pagina de Relatorios existente
+- Responsividade mobile-first sera aplicada em todas as tabelas e graficos
