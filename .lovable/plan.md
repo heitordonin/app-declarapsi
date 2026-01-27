@@ -1,83 +1,40 @@
 
-# Correção do Reenvio de Protocolo
+# Atualizar Remetente de E-mails para noreply@declarapsi.com.br
 
-## Problema Identificado
+## Resumo
 
-O botão de reenviar protocolo em `/contador/protocolos` **NÃO envia e-mail**. Ele apenas atualiza o status do documento para "sent", mas não adiciona o documento na fila de e-mails (`email_queue`).
-
-## Fluxo Atual (Incorreto)
-
-```text
-Botão Reenviar → Atualiza documents.delivery_state = 'sent' → FIM
-                 (Nenhum e-mail é enviado!)
-```
-
-## Fluxo Correto (Como Deveria Ser)
-
-```text
-Botão Reenviar → Insere na email_queue → Cron processa → E-mail enviado → Webhook atualiza status
-```
+Atualizar todas as Edge Functions que enviam e-mails para usar o novo dominio verificado `declarapsi.com.br` em vez do dominio de teste `onboarding@resend.dev`.
 
 ## Alteracoes Necessarias
 
-### Arquivo: `src/components/protocolos/DocumentosTable.tsx`
+Substituir o remetente em 4 arquivos:
 
-Modificar a `resendMutation` para:
+| Arquivo | Funcao | De | Para |
+|---------|--------|----|----|
+| `process-email-queue/index.ts` | Fila de envio de documentos | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
+| `send-document-notification/index.ts` | Notificacao de documento | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
+| `send-due-reminders/index.ts` | Lembrete de vencimento | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
+| `send-welcome-email/index.ts` | Boas-vindas ao cliente | `onboarding@resend.dev` | `noreply@declarapsi.com.br` |
 
-1. Atualizar o `delivery_state` do documento para `'sent'`
-2. Resetar o campo `viewed_at` para `null` (indicando novo envio)
-3. **Inserir um novo registro na tabela `email_queue`** com status `'pending'`
+## Codigo
 
-### Codigo Corrigido
-
-A mutacao passara a:
-
+Em cada arquivo, a linha:
 ```typescript
-const resendMutation = useMutation({
-  mutationFn: async (documentId: string) => {
-    // 1. Atualizar documento
-    const { error: updateError } = await supabase
-      .from("documents")
-      .update({
-        delivery_state: "sent",
-        delivered_at: new Date().toISOString(),
-        viewed_at: null, // Resetar visualizacao
-      })
-      .eq("id", documentId);
-
-    if (updateError) throw updateError;
-
-    // 2. Adicionar na fila de e-mails
-    const { error: queueError } = await supabase
-      .from("email_queue")
-      .insert({
-        document_id: documentId,
-        status: "pending",
-      });
-
-    if (queueError) throw queueError;
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["documents"] });
-    queryClient.invalidateQueries({ queryKey: ["email-queue"] });
-    toast({
-      title: "Sucesso",
-      description: "Documento adicionado a fila de reenvio.",
-    });
-  },
-  // ... error handling
-});
+from: 'Declara Psi <onboarding@resend.dev>',
 ```
 
-## Comportamento Esperado Apos Correcao
+Sera alterada para:
+```typescript
+from: 'Declara Psi <noreply@declarapsi.com.br>',
+```
 
-1. Usuario clica em "Reenviar"
-2. Documento tem status atualizado para "Enviado"
-3. Novo registro criado em `email_queue` com status "pending"
-4. Cron job (a cada minuto) processa a fila
-5. E-mail e enviado via Resend
-6. Webhook atualiza status para "Entregue" ou "Aberto"
+## Beneficios
 
-## Observacao Sobre RLS
+1. **Profissionalismo**: E-mails enviados do proprio dominio da empresa
+2. **Entregabilidade**: Melhor reputacao de envio com dominio verificado
+3. **Isolamento**: Separacao clara dos eventos de e-mail deste sistema no Resend
+4. **Rastreabilidade**: Facilita identificar e-mails do Declara Psi no painel do Resend
 
-A tabela `email_queue` ja possui policy que permite admins visualizar e uma policy "System can manage" que permite INSERT. A operacao sera executada pelo usuario autenticado com role admin, portanto funcionara corretamente.
+## Observacao sobre Filtro de Eventos
+
+Com o dominio dedicado, os eventos no Resend ficam naturalmente separados. Porem, o webhook ainda recebera eventos de outros sistemas da mesma conta. Se desejar filtro adicional, podemos implementar verificacao no webhook para ignorar eventos de outros dominios.
