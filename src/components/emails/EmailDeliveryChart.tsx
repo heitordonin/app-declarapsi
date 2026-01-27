@@ -11,7 +11,6 @@ interface EmailDeliveryChartProps {
 const STATUS_LABELS: Record<string, string> = {
   sent: 'Enviado',
   delivered: 'Entregue',
-  opened: 'Aberto',
   bounced: 'Bounced',
   failed: 'Falhou',
   clicked: 'Clicado',

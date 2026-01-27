@@ -7,7 +7,6 @@ interface EmailEvolutionChartProps {
     date: string;
     sent: number;
     delivered: number;
-    opened: number;
     bounced: number;
     failed: number;
   }[];
@@ -16,7 +15,6 @@ interface EmailEvolutionChartProps {
 const CHART_COLORS = {
   sent: '#3b82f6',
   delivered: '#06b6d4',
-  opened: '#22c55e',
   bounced: '#ef4444',
   failed: '#dc2626',
 };
@@ -24,7 +22,6 @@ const CHART_COLORS = {
 const STATUS_LABELS: Record<string, string> = {
   sent: 'Enviado',
   delivered: 'Entregue',
-  opened: 'Aberto',
   bounced: 'Bounced',
   failed: 'Falhou',
 };
@@ -60,7 +57,6 @@ export function EmailEvolutionChart({ data }: EmailEvolutionChartProps) {
         <Legend formatter={(value) => STATUS_LABELS[value] || value} />
         <Bar dataKey="sent" fill={CHART_COLORS.sent} name="sent" stackId="a" />
         <Bar dataKey="delivered" fill={CHART_COLORS.delivered} name="delivered" stackId="a" />
-        <Bar dataKey="opened" fill={CHART_COLORS.opened} name="opened" stackId="a" />
         <Bar dataKey="bounced" fill={CHART_COLORS.bounced} name="bounced" stackId="a" />
         <Bar dataKey="failed" fill={CHART_COLORS.failed} name="failed" stackId="a" />
       </BarChart>
