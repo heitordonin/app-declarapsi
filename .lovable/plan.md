@@ -1,198 +1,224 @@
 
-# Funcionalidade: Marcar Pagamento como Pago + Registrar Despesa
+# Reconhecimento Automatico de Categoria: DARF vs INSS
 
 ## Resumo
 
-Adicionar funcionalidade para o cliente marcar um documento de pagamento (guia/DARF) como pago, informando a data do pagamento e opcionalmente registrando automaticamente o valor como despesa na categoria "DARF Carne-Leao".
+Atualizar a funcionalidade de "Marcar como Pago" para identificar automaticamente se o documento e um DARF ou INSS e registrar na categoria de despesa correta.
 
-## Contexto Atual
+## Contexto
 
-A pagina `/cliente/pagamentos` exibe documentos fiscais enviados pelo contador (guias de impostos). Atualmente o cliente pode apenas visualizar e baixar os documentos. Os status existentes sao:
-- **Pendente**: Documento enviado, ainda nao visualizado
-- **Visualizado**: Documento foi baixado/visto pelo cliente
-- **Vencido**: Data de vencimento passou
+O sistema possui duas categorias de despesas para pagamentos fiscais:
+- **DARF Carne-Leao** (id: `5bdb11af-bb34-4eda-a864-c2a400f0e7a9`)
+- **INSS - Previdencia Social** (id: `7993b8a5-3bbd-484e-ba43-c78bf1fe8c9b`)
 
-## Nova Funcionalidade
-
-Adicionar um novo status **Pago** e permitir que o cliente:
-1. Marque o documento como pago
-2. Informe a data do pagamento
-3. Opcionalmente registre como despesa automaticamente
+As obrigacoes cadastradas sao:
+- "DARF Carne Leao" - deve registrar como DARF
+- "INSS 1007" - deve registrar como INSS
+- "INSS 1163" - deve registrar como INSS
 
 ## Arquitetura da Solucao
 
 ```text
 +------------------+     +----------------------+     +------------------+
-| PaymentCard.tsx  | --> | MarkPaymentAsPaid    | --> | usePaymentsData  |
-| (botao "Pagar")  |     | Dialog.tsx           |     | (mutation)       |
+| documents        | --> | Payment interface    | --> | Pagamentos.tsx   |
+| obligation_id    |     | + obligationName     |     | detecta categoria|
 +------------------+     +----------------------+     +------------------+
-                                   |
-                                   v
-                         +------------------+
-                         | useExpensesData  |
-                         | (criar despesa)  |
-                         +------------------+
+                                                              |
+                                                              v
+                                                    +------------------+
+                                                    | DARF? → DARF ID  |
+                                                    | INSS? → INSS ID  |
+                                                    +------------------+
 ```
 
-## Alteracoes no Banco de Dados
+## Alteracoes no Codigo
 
-### 1. Nova coluna na tabela `documents`
+### 1. usePaymentsData.ts
 
-```sql
-ALTER TABLE documents 
-ADD COLUMN paid_at timestamp with time zone DEFAULT NULL;
-```
+Adicionar o campo `obligationName` ao interface Payment:
 
-Esta coluna armazena quando o cliente marcou o documento como pago.
-
-## Alteracoes no Frontend
-
-### 1. Novo tipo Payment (usePaymentsData.ts)
-
-Adicionar novo status "paid" ao tipo PaymentStatus:
 ```typescript
-export type PaymentStatus = 'pending' | 'viewed' | 'overdue' | 'paid';
+export interface Payment {
+  id: string;
+  title: string;
+  value: number | null;
+  dueDate: string;
+  status: PaymentStatus;
+  deliveredAt: string;
+  isNew: boolean;
+  filePath: string;
+  fileName: string;
+  competence: string;
+  viewedAt: string | null;
+  paidAt: string | null;
+  obligationName: string | null;  // NOVO CAMPO
+}
 ```
 
-Adicionar campo `paidAt` ao interface Payment:
-```typescript
-paidAt: string | null;
-```
+Atualizar o mapeamento para incluir o nome da obrigacao:
 
-Atualizar logica de status para priorizar "paid":
 ```typescript
-const getPaymentStatus = (dueAt: Date, viewedAt: string | null, paidAt: string | null): PaymentStatus => {
-  if (paidAt) return 'paid';
-  const today = startOfDay(new Date());
-  if (isBefore(dueAt, today)) return 'overdue';
-  if (viewedAt) return 'viewed';
-  return 'pending';
+return {
+  // ... campos existentes
+  obligationName: doc.obligation?.name || null,
 };
 ```
 
-### 2. Nova mutation em usePaymentsData.ts
+### 2. Pagamentos.tsx
+
+Criar funcao helper para determinar a categoria correta:
 
 ```typescript
-const markAsPaidMutation = useMutation({
-  mutationFn: async ({ documentId, paidAt }: { documentId: string; paidAt: Date }) => {
-    const { error } = await supabase
-      .from('documents')
-      .update({ paid_at: paidAt.toISOString() })
-      .eq('id', documentId);
-    if (error) throw error;
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['client-payments'] });
-  },
-});
+// Mapeamento de categorias
+const DARF_CATEGORY_ID = '5bdb11af-bb34-4eda-a864-c2a400f0e7a9';
+const INSS_CATEGORY_ID = '7993b8a5-3bbd-484e-ba43-c78bf1fe8c9b';
+
+function getExpenseCategoryId(obligationName: string | null): string | null {
+  if (!obligationName) return null;
+  
+  const normalizedName = obligationName.toUpperCase();
+  
+  if (normalizedName.includes('INSS')) {
+    return INSS_CATEGORY_ID;
+  }
+  
+  if (normalizedName.includes('DARF') || normalizedName.includes('CARNÊ')) {
+    return DARF_CATEGORY_ID;
+  }
+  
+  return null;
+}
+
+function getExpenseCategoryName(obligationName: string | null): string | null {
+  if (!obligationName) return null;
+  
+  const normalizedName = obligationName.toUpperCase();
+  
+  if (normalizedName.includes('INSS')) {
+    return 'INSS - Previdência Social';
+  }
+  
+  if (normalizedName.includes('DARF') || normalizedName.includes('CARNÊ')) {
+    return 'DARF Carnê-Leão';
+  }
+  
+  return null;
+}
 ```
 
-### 3. Novo componente: MarkPaymentAsPaidDialog.tsx
-
-Criar em `src/components/cliente/pagamentos/`:
-- Usa Drawer no mobile (padrao do sistema)
-- Usa AlertDialog no desktop
-- Campos:
-  - DatePicker para data do pagamento
-  - Checkbox "Registrar como despesa"
-- Resumo do documento (titulo, valor, vencimento)
-- Validacao de periodo fiscal via `canMarkAsPaidOnDate()`
-- Se checkbox marcado, cria despesa automaticamente na categoria "DARF Carne-Leao"
-
-### 4. Atualizar PaymentCard.tsx
-
-**Antes:**
-- Apenas botao "Baixar"
-
-**Depois:**
-- Botao "Baixar" 
-- Botao "Pagar" (apenas se status != 'paid')
-- Se status = 'paid': mostrar badge "Pago" e data do pagamento
-
-Layout mobile-first otimizado:
-```text
-+------------------------------------------+
-| [Novo]  Titulo do documento        2h    |
-|                                          |
-| Valor: R$ 150,00                         |
-| Vencimento: 15/02/2026                   |
-| Status: [Pendente]                       |
-|                                          |
-|     [Baixar]        [Pagar]              |
-+------------------------------------------+
-```
-
-Quando pago:
-```text
-+------------------------------------------+
-| Titulo do documento                 2h   |
-|                                          |
-| Valor: R$ 150,00                         |
-| Vencimento: 15/02/2026                   |
-| Status: [Pago em 10/02/2026]             |
-|                                          |
-|              [Baixar]                    |
-+------------------------------------------+
-```
-
-### 5. Atualizar statusConfig em PaymentCard.tsx
+Atualizar `handleConfirmPayment`:
 
 ```typescript
-const statusConfig = {
-  pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-800 ...' },
-  viewed: { label: 'Visualizado', className: 'bg-blue-100 text-blue-800 ...' },
-  overdue: { label: 'Vencido', className: 'bg-red-100 text-red-800 ...' },
-  paid: { label: 'Pago', className: 'bg-green-100 text-green-800 ...' },
+const handleConfirmPayment = async (paymentDate: Date, registerAsExpense: boolean) => {
+  if (!selectedPayment) return;
+  
+  setIsProcessing(true);
+  try {
+    await markAsPaid({ documentId: selectedPayment.id, paidAt: paymentDate });
+
+    if (registerAsExpense && selectedPayment.value) {
+      const categoryId = getExpenseCategoryId(selectedPayment.obligationName);
+      
+      if (!categoryId) {
+        toast.warning('Não foi possível identificar a categoria da despesa.');
+        // Ainda marca como pago, mas não registra despesa
+      } else {
+        const [competencyYear, competencyMonth] = selectedPayment.competence.split('-').map(Number);
+        
+        await createExpense.mutateAsync({
+          categoryId: categoryId,  // USA CATEGORIA DINAMICA
+          value: selectedPayment.value.toString(),
+          paymentDate: format(paymentDate, 'yyyy-MM-dd'),
+          isResidentialExpense: false,
+          competencyMonth,
+          competencyYear,
+          description: selectedPayment.title,
+        });
+      }
+    }
+
+    toast.success(
+      registerAsExpense 
+        ? 'Pagamento confirmado e despesa registrada!' 
+        : 'Pagamento confirmado!'
+    );
+    // ...
+  }
 };
 ```
 
-### 6. Atualizar RLS policy (documents)
+### 3. MarkPaymentAsPaidDialog.tsx
 
-A policy existente "Clients can mark documents as viewed" ja permite UPDATE. Verificar se precisa ajustar para incluir `paid_at`.
+Atualizar props para receber o nome da categoria:
 
-## Fluxo do Usuario
+```typescript
+interface MarkPaymentAsPaidDialogProps {
+  payment: Payment | null;
+  expenseCategoryName: string | null;  // NOVO PROP
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (paymentDate: Date, registerAsExpense: boolean) => Promise<void>;
+  isLoading?: boolean;
+}
+```
 
-1. Cliente acessa `/cliente/pagamentos`
-2. Visualiza lista de documentos com novo botao "Pagar"
-3. Clica em "Pagar" no documento desejado
-4. Drawer abre (mobile) ou Dialog abre (desktop)
-5. Cliente seleciona data do pagamento
-6. Cliente decide se quer registrar como despesa (checkbox)
-7. Clica em "Confirmar Pagamento"
-8. Sistema:
-   - Valida periodo fiscal
-   - Atualiza `paid_at` no documento
-   - Se checkbox marcado: cria despesa na categoria "DARF Carne-Leao"
-9. Card atualiza para mostrar status "Pago"
+Atualizar o texto do checkbox para mostrar a categoria correta:
 
-## Arquivos a Criar/Modificar
+```typescript
+<p className="text-xs text-muted-foreground">
+  O valor será registrado automaticamente na categoria 
+  "{expenseCategoryName || 'Não identificada'}"
+</p>
+```
+
+Se a categoria nao for identificada, desabilitar o checkbox:
+
+```typescript
+const canRegisterAsExpense = hasValue && !!expenseCategoryName;
+
+{hasValue && (
+  <div className="flex items-start space-x-3 pt-2">
+    <Checkbox
+      id="register-expense"
+      checked={registerAsExpense}
+      onCheckedChange={(checked) => setRegisterAsExpense(checked === true)}
+      disabled={!isDateAllowed || !canRegisterAsExpense}
+    />
+    <div className="space-y-1">
+      <Label>Registrar como despesa</Label>
+      <p className="text-xs text-muted-foreground">
+        {expenseCategoryName 
+          ? `O valor será registrado na categoria "${expenseCategoryName}"`
+          : 'Categoria não identificada - não é possível registrar como despesa'
+        }
+      </p>
+    </div>
+  </div>
+)}
+```
+
+## Arquivos a Modificar
 
 | Arquivo | Acao |
 |---------|------|
-| `src/hooks/cliente/usePaymentsData.ts` | Modificar: adicionar paidAt, novo status, mutation |
-| `src/components/cliente/pagamentos/PaymentCard.tsx` | Modificar: novo botao, novo status, layout |
-| `src/components/cliente/pagamentos/MarkPaymentAsPaidDialog.tsx` | Criar: dialog responsivo |
-| `src/pages/cliente/Pagamentos.tsx` | Modificar: gerenciar estado do dialog |
+| `src/hooks/cliente/usePaymentsData.ts` | Adicionar campo `obligationName` ao Payment |
+| `src/pages/cliente/Pagamentos.tsx` | Adicionar logica de deteccao de categoria |
+| `src/components/cliente/pagamentos/MarkPaymentAsPaidDialog.tsx` | Receber e exibir nome da categoria |
 
-## Integracao com Despesas
+## Fluxo Atualizado
 
-Quando o cliente marcar checkbox "Registrar como despesa":
-- Categoria: "DARF Carne-Leao" (id: `5bdb11af-bb34-4eda-a864-c2a400f0e7a9`)
-- Valor: `payment.value` (valor do documento)
-- Data pagamento: data selecionada no dialog
-- Competencia: extraida do campo `competence` do documento (formato "yyyy-MM")
-- Descricao: nome do documento/obrigacao
+1. Usuario clica "Pagar" no documento
+2. Sistema identifica o tipo: DARF ou INSS baseado no `obligationName`
+3. Dialog mostra a categoria que sera usada: "DARF Carne-Leao" ou "INSS - Previdencia Social"
+4. Usuario confirma
+5. Sistema registra despesa na categoria correta
 
 ## Validacoes
 
-1. **Periodo fiscal**: Usar `canMarkAsPaidOnDate()` de `charge-period-utils.ts`
-2. **Documento ja pago**: Nao mostrar botao "Pagar" se `paidAt` existe
-3. **Valor obrigatorio**: So habilitar checkbox de despesa se `payment.value` existe
+1. Se `obligationName` nao contem "INSS" nem "DARF/CARNE", nao permite registrar como despesa
+2. Checkbox de despesa so aparece se a categoria foi identificada
+3. Toast de warning se categoria nao identificada
 
-## UX Melhorias Incluidas
+## Extensibilidade
 
-1. **Layout mobile-first**: Botoes com tamanho touch-friendly (44px)
-2. **Drawer responsivo**: Abre de baixo no mobile, dialog centralizado no desktop
-3. **Feedback visual**: Badge verde com data quando pago
-4. **Confirmacao clara**: Resumo do documento antes de confirmar
-5. **Checkbox opcional**: Registrar despesa nao e obrigatorio
+A funcao `getExpenseCategoryId` pode ser facilmente estendida para suportar novos tipos de obrigacoes no futuro, bastando adicionar novas condicoes de mapeamento.
