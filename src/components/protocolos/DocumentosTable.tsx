@@ -202,21 +202,34 @@ export function DocumentosTable() {
 
   const resendMutation = useMutation({
     mutationFn: async (documentId: string) => {
-      const { error } = await supabase
+      // 1. Atualizar documento
+      const { error: updateError } = await supabase
         .from("documents")
         .update({
           delivery_state: "sent",
           delivered_at: new Date().toISOString(),
+          viewed_at: null,
         })
         .eq("id", documentId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // 2. Adicionar na fila de e-mails
+      const { error: queueError } = await supabase
+        .from("email_queue")
+        .insert({
+          document_id: documentId,
+          status: "pending",
+        });
+
+      if (queueError) throw queueError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["email-queue"] });
       toast({
         title: "Sucesso",
-        description: "Documento reenviado com sucesso.",
+        description: "Documento adicionado à fila de reenvio.",
       });
     },
     onError: (error) => {
