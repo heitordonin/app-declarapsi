@@ -112,6 +112,20 @@ export function usePaymentsData(clientId?: string) {
     },
   });
 
+  const unmarkAsPaidMutation = useMutation({
+    mutationFn: async (documentId: string) => {
+      const { error } = await supabase
+        .from('documents')
+        .update({ paid_at: null })
+        .eq('id', documentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client-payments'] });
+    },
+  });
+
   const downloadDocument = async (payment: Payment) => {
     try {
       // Mark as viewed first
@@ -151,5 +165,7 @@ export function usePaymentsData(clientId?: string) {
     markAsViewed: markAsViewedMutation.mutate,
     markAsPaid: markAsPaidMutation.mutateAsync,
     isMarkingAsPaid: markAsPaidMutation.isPending,
+    unmarkAsPaid: unmarkAsPaidMutation.mutateAsync,
+    isUnmarkingAsPaid: unmarkAsPaidMutation.isPending,
   };
 }
