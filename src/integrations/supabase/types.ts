@@ -817,6 +817,60 @@ export type Database = {
           },
         ]
       }
+      permanent_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          name: string
+          org_id: string
+          uploaded_at: string
+          uploaded_by: string
+          viewed_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          name: string
+          org_id: string
+          uploaded_at?: string
+          uploaded_by: string
+          viewed_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          name?: string
+          org_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permanent_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permanent_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

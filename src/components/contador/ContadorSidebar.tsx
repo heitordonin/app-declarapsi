@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { CalendarDays, Mail, Users, LogOut, FileText, BarChart, Settings, PieChart } from 'lucide-react';
+import { CalendarDays, Mail, Users, LogOut, FileText, BarChart, Settings, PieChart, FolderOpen } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,7 @@ const navItems = [
   { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
   { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
   { icon: BarChart, label: 'Protocolos', path: '/contador/protocolos' },
+  { icon: FolderOpen, label: 'Documentos', path: '/contador/documentos' },
   { icon: Settings, label: 'Configurações', path: '/contador/configuracoes' },
   { icon: Mail, label: 'Comunicados', path: '/contador/comunicados' },
   { icon: Users, label: 'Clientes', path: '/contador/clientes' },

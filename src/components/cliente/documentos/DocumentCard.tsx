@@ -6,9 +6,10 @@ import type { Document } from '@/hooks/cliente/useDocumentsData';
 
 interface DocumentCardProps {
   document: Document;
+  onDownload: (document: Document) => Promise<boolean>;
 }
 
-export function DocumentCard({ document }: DocumentCardProps) {
+export function DocumentCard({ document, onDownload }: DocumentCardProps) {
   return (
     <Card>
       <CardContent className="p-4 flex items-center justify-between">
@@ -17,11 +18,11 @@ export function DocumentCard({ document }: DocumentCardProps) {
           <div>
             <p className="font-medium text-foreground">{document.name}</p>
             <p className="text-xs text-muted-foreground">
-              Enviado em {format(new Date(document.createdAt), 'dd/MM/yyyy')}
+              Enviado em {format(new Date(document.uploaded_at), 'dd/MM/yyyy')}
             </p>
           </div>
         </div>
-        <DocumentActionsMenu documentId={document.id} />
+        <DocumentActionsMenu document={document} onDownload={onDownload} />
       </CardContent>
     </Card>
   );
