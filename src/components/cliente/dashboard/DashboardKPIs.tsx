@@ -12,9 +12,20 @@ interface DashboardKPIsProps {
 
 export function DashboardKPIs({ data }: DashboardKPIsProps) {
   const formatCurrency = (value: number) => {
+    // Use compact notation on mobile for large numbers
+    if (value >= 10000) {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(value);
+    }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
