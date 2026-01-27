@@ -9,6 +9,7 @@ interface AuthContextType {
   role: AppRole | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signInWithCaptcha: (email: string, password: string, captchaToken: string) => Promise<{ error: { message: string } | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
 }
@@ -72,6 +73,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const signInWithCaptcha = async (email: string, password: string, captchaToken: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-hcaptcha`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            token: captchaToken, 
+            email, 
+            password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.error) {
+        return { error: { message: data.error } };
+      }
+
+      // Configurar sessão com os dados retornados
+      if (data.session?.access_token && data.session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error in signInWithCaptcha:', error);
+      return { error: { message: 'Erro ao processar login. Tente novamente.' } };
+    }
+  };
+
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/auth/callback`;
     
@@ -94,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, loading, signIn, signInWithCaptcha, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
