@@ -1,17 +1,25 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, Loader2 } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { MonthSelector } from '@/components/cliente/pagamentos/MonthSelector';
 import { PaymentCard } from '@/components/cliente/pagamentos/PaymentCard';
-import { usePaymentsData } from '@/hooks/cliente/usePaymentsData';
+import { MarkPaymentAsPaidDialog } from '@/components/cliente/pagamentos/MarkPaymentAsPaidDialog';
+import { usePaymentsData, type Payment } from '@/hooks/cliente/usePaymentsData';
+import { useExpensesData } from '@/hooks/cliente/useExpensesData';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
+
+// ID da categoria "DARF Carnê-Leão"
+const DARF_CATEGORY_ID = '5bdb11af-bb34-4eda-a864-c2a400f0e7a9';
 
 export default function Pagamentos() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(format(new Date(), 'yyyy-MM'));
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Get client ID
   const { data: client } = useQuery({
@@ -28,7 +36,8 @@ export default function Pagamentos() {
     },
   });
 
-  const { payments, isLoading, downloadDocument } = usePaymentsData(client?.id);
+  const { payments, isLoading, downloadDocument, markAsPaid } = usePaymentsData(client?.id);
+  const { createExpense } = useExpensesData();
 
   const filteredPayments = useMemo(() => {
     return payments.filter((payment) => {
@@ -60,21 +69,60 @@ export default function Pagamentos() {
     return payments.filter(p => p.isNew).length;
   }, [payments]);
 
+  const handleOpenMarkAsPaidDialog = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setDialogOpen(true);
+  };
+
+  const handleConfirmPayment = async (paymentDate: Date, registerAsExpense: boolean) => {
+    if (!selectedPayment) return;
+    
+    setIsProcessing(true);
+    try {
+      // Mark document as paid
+      await markAsPaid({ documentId: selectedPayment.id, paidAt: paymentDate });
+
+      // Create expense if requested
+      if (registerAsExpense && selectedPayment.value) {
+        // Extract competency from document's competence field (format: "yyyy-MM")
+        const [competencyYear, competencyMonth] = selectedPayment.competence.split('-').map(Number);
+        
+        await createExpense.mutateAsync({
+          categoryId: DARF_CATEGORY_ID,
+          value: selectedPayment.value.toString(),
+          paymentDate: format(paymentDate, 'yyyy-MM-dd'),
+          isResidentialExpense: false,
+          competencyMonth,
+          competencyYear,
+          description: selectedPayment.title,
+        });
+      }
+
+      toast.success(
+        registerAsExpense 
+          ? 'Pagamento confirmado e despesa registrada!' 
+          : 'Pagamento confirmado!'
+      );
+      setDialogOpen(false);
+      setSelectedPayment(null);
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      toast.error('Erro ao confirmar pagamento. Tente novamente.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4">
-      {/* Header with filter icon */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-foreground">A pagar</h1>
-          {newPaymentsCount > 0 && (
-            <span className="bg-accent text-accent-foreground text-xs font-medium px-2 py-0.5 rounded-full">
-              {newPaymentsCount} {newPaymentsCount === 1 ? 'novo' : 'novos'}
-            </span>
-          )}
-        </div>
-        <Button variant="ghost" size="icon">
-          <Filter className="h-5 w-5" />
-        </Button>
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground">A pagar</h1>
+        {newPaymentsCount > 0 && (
+          <span className="bg-accent text-accent-foreground text-xs font-medium px-2 py-0.5 rounded-full">
+            {newPaymentsCount} {newPaymentsCount === 1 ? 'novo' : 'novos'}
+          </span>
+        )}
       </div>
 
       {/* Search */}
@@ -122,11 +170,21 @@ export default function Pagamentos() {
                 key={payment.id} 
                 payment={payment}
                 onDownload={downloadDocument}
+                onMarkAsPaid={handleOpenMarkAsPaidDialog}
               />
             ))
           )}
         </div>
       )}
+
+      {/* Mark as Paid Dialog */}
+      <MarkPaymentAsPaidDialog
+        payment={selectedPayment}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onConfirm={handleConfirmPayment}
+        isLoading={isProcessing}
+      />
     </div>
   );
 }
