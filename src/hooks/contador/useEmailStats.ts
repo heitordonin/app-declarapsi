@@ -5,7 +5,6 @@ import { startOfDay, subDays, format } from 'date-fns';
 export interface EmailStats {
   totalSent: number;
   deliveryRate: number;
-  openRate: number;
   failureRate: number;
   statusDistribution: {
     status: string;
@@ -16,7 +15,6 @@ export interface EmailStats {
     date: string;
     sent: number;
     delivered: number;
-    opened: number;
     bounced: number;
     failed: number;
   }[];
@@ -25,7 +23,6 @@ export interface EmailStats {
 const EMAIL_STATUS_COLORS = {
   sent: '#3b82f6',
   delivered: '#06b6d4',
-  opened: '#22c55e',
   bounced: '#ef4444',
   failed: '#dc2626',
   clicked: '#8b5cf6',
@@ -57,7 +54,7 @@ export function useEmailStats(days: number = 30) {
         // Group by date
         const dateKey = format(new Date(event.received_at), 'yyyy-MM-dd');
         if (!dailyData[dateKey]) {
-          dailyData[dateKey] = { sent: 0, delivered: 0, opened: 0, bounced: 0, failed: 0 };
+          dailyData[dateKey] = { sent: 0, delivered: 0, bounced: 0, failed: 0 };
         }
         if (event.event_type in dailyData[dateKey]) {
           dailyData[dateKey][event.event_type]++;
@@ -66,12 +63,10 @@ export function useEmailStats(days: number = 30) {
 
       const totalSent = eventCounts['sent'] || 0;
       const delivered = eventCounts['delivered'] || 0;
-      const opened = eventCounts['opened'] || 0;
       const bounced = eventCounts['bounced'] || 0;
       const failed = (eventCounts['bounced'] || 0) + (eventCounts['spam'] || 0);
 
-      const deliveryRate = totalSent > 0 ? ((delivered + opened) / totalSent) * 100 : 0;
-      const openRate = delivered > 0 ? (opened / delivered) * 100 : 0;
+      const deliveryRate = totalSent > 0 ? (delivered / totalSent) * 100 : 0;
       const failureRate = totalSent > 0 ? (failed / totalSent) * 100 : 0;
 
       // Build status distribution
@@ -87,7 +82,6 @@ export function useEmailStats(days: number = 30) {
           date,
           sent: counts.sent ?? 0,
           delivered: counts.delivered ?? 0,
-          opened: counts.opened ?? 0,
           bounced: counts.bounced ?? 0,
           failed: counts.failed ?? 0,
         }))
@@ -96,7 +90,6 @@ export function useEmailStats(days: number = 30) {
       return {
         totalSent,
         deliveryRate,
-        openRate,
         failureRate,
         statusDistribution,
         dailyEvolution,

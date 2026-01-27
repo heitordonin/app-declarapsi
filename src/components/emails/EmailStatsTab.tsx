@@ -5,7 +5,7 @@ import { useEmailStats } from '@/hooks/contador/useEmailStats';
 import { KPICard } from '@/components/relatorios/KPICard';
 import { EmailDeliveryChart } from './EmailDeliveryChart';
 import { EmailEvolutionChart } from './EmailEvolutionChart';
-import { Mail, CheckCircle, Eye, AlertTriangle, Loader2 } from 'lucide-react';
+import { Mail, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 
 export function EmailStatsTab() {
   const [period, setPeriod] = useState<string>('30');
@@ -36,7 +36,7 @@ export function EmailStatsTab() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <KPICard
           title="Total Enviados"
           value={stats?.totalSent || 0}
@@ -48,12 +48,6 @@ export function EmailStatsTab() {
           value={`${(stats?.deliveryRate || 0).toFixed(1)}%`}
           icon={CheckCircle}
           description="Entregues / Enviados"
-        />
-        <KPICard
-          title="Taxa de Abertura"
-          value={`${(stats?.openRate || 0).toFixed(1)}%`}
-          icon={Eye}
-          description="Abertos / Entregues"
         />
         <KPICard
           title="Taxa de Falha"
