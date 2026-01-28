@@ -7,8 +7,7 @@ import { PaymentCard } from '@/components/cliente/pagamentos/PaymentCard';
 import { MarkPaymentAsPaidDialog } from '@/components/cliente/pagamentos/MarkPaymentAsPaidDialog';
 import { usePaymentsData, type Payment } from '@/hooks/cliente/usePaymentsData';
 import { useExpensesData } from '@/hooks/cliente/useExpensesData';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useClientId } from '@/hooks/cliente/useClientId';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -55,22 +54,10 @@ export default function Pagamentos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Get client ID
-  const { data: client } = useQuery({
-    queryKey: ['client-data'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      const { data } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      return data;
-    },
-  });
+  // Get client ID from centralized hook
+  const { clientId } = useClientId();
 
-  const { payments, isLoading, downloadDocument, markAsPaid, unmarkAsPaid, isUnmarkingAsPaid } = usePaymentsData(client?.id);
+  const { payments, isLoading, downloadDocument, markAsPaid, unmarkAsPaid, isUnmarkingAsPaid } = usePaymentsData(clientId);
   const { createExpense } = useExpensesData();
 
   const filteredPayments = useMemo(() => {

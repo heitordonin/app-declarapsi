@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useClientId } from './useClientId';
 
 interface DashboardData {
   kpis: {
@@ -12,31 +13,16 @@ interface DashboardData {
   isLoading: boolean;
 }
 
-async function fetchClientId(): Promise<string> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-
-  const { data: client, error } = await supabase
-    .from('clients')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!client) throw new Error('Cliente não encontrado');
-
-  return client.id;
-}
-
 export function useDashboardData(startDate: Date, endDate: Date): DashboardData {
+  const { clientId } = useClientId();
   const startDateStr = startDate.toISOString().split('T')[0];
   const endDateStr = endDate.toISOString().split('T')[0];
 
   // Query para receitas (cobranças pagas no período)
   const { data: chargesData, isLoading: chargesLoading } = useQuery({
-    queryKey: ['dashboard-charges', startDateStr, endDateStr],
+    queryKey: ['dashboard-charges', clientId, startDateStr, endDateStr],
     queryFn: async () => {
-      const clientId = await fetchClientId();
+      if (!clientId) return [];
       
       const { data, error } = await supabase
         .from('charges')
@@ -49,13 +35,14 @@ export function useDashboardData(startDate: Date, endDate: Date): DashboardData 
       if (error) throw error;
       return data || [];
     },
+    enabled: !!clientId,
   });
 
   // Query para despesas no período
   const { data: expensesData, isLoading: expensesLoading } = useQuery({
-    queryKey: ['dashboard-expenses', startDateStr, endDateStr],
+    queryKey: ['dashboard-expenses', clientId, startDateStr, endDateStr],
     queryFn: async () => {
-      const clientId = await fetchClientId();
+      if (!clientId) return [];
       
       const { data, error } = await supabase
         .from('expenses')
@@ -67,6 +54,7 @@ export function useDashboardData(startDate: Date, endDate: Date): DashboardData 
       if (error) throw error;
       return data || [];
     },
+    enabled: !!clientId,
   });
 
   // Calcular KPIs

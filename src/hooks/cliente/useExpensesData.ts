@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { parseCurrencyToNumber } from '@/lib/expense-utils';
+import { useClientId } from './useClientId';
 
 export interface Expense {
   id: string;
@@ -28,27 +29,14 @@ export interface ExpenseFormData {
   competencyYear?: number;
 }
 
-async function getClientId(): Promise<string> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-
-  const { data, error } = await supabase
-    .from('clients')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error) throw error;
-  return data.id;
-}
-
 export function useExpensesData() {
   const queryClient = useQueryClient();
+  const { clientId } = useClientId();
 
   const { data: expenses = [], isLoading, error } = useQuery({
-    queryKey: ['expenses'],
+    queryKey: ['expenses', clientId],
     queryFn: async (): Promise<Expense[]> => {
-      const clientId = await getClientId();
+      if (!clientId) return [];
 
       const { data, error } = await supabase
         .from('expenses')
@@ -84,11 +72,12 @@ export function useExpensesData() {
         competencyYear: expense.competency_year,
       }));
     },
+    enabled: !!clientId,
   });
 
   const createExpense = useMutation({
     mutationFn: async (formData: ExpenseFormData) => {
-      const clientId = await getClientId();
+      if (!clientId) throw new Error('Cliente não encontrado');
       
       const amount = parseCurrencyToNumber(formData.value);
       const penalty = formData.penalty ? parseCurrencyToNumber(formData.penalty) : 0;
@@ -126,6 +115,8 @@ export function useExpensesData() {
 
   const updateExpense = useMutation({
     mutationFn: async ({ id, data: formData }: { id: string; data: ExpenseFormData }) => {
+      if (!clientId) throw new Error('Cliente não encontrado');
+      
       const amount = parseCurrencyToNumber(formData.value);
       const penalty = formData.penalty ? parseCurrencyToNumber(formData.penalty) : 0;
       
@@ -147,7 +138,8 @@ export function useExpensesData() {
           competency_year: formData.competencyYear || null,
           description: formData.description || null,
         })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('client_id', clientId);
 
       if (error) throw error;
     },
@@ -164,10 +156,13 @@ export function useExpensesData() {
 
   const deleteExpense = useMutation({
     mutationFn: async (id: string) => {
+      if (!clientId) throw new Error('Cliente não encontrado');
+      
       const { error } = await supabase
         .from('expenses')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('client_id', clientId);
 
       if (error) throw error;
     },

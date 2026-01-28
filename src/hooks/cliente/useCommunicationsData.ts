@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useClientId } from './useClientId';
 
 export interface CommunicationAttachment {
   name: string;
@@ -19,24 +20,14 @@ export interface Communication {
 
 export function useCommunicationsData() {
   const queryClient = useQueryClient();
+  const { clientId } = useClientId();
 
   const { data: communications = [], isLoading, error } = useQuery({
-    queryKey: ['client-communications'],
+    queryKey: ['client-communications', clientId],
     queryFn: async () => {
-      // 1. Buscar user logado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      if (!clientId) return [];
 
-      // 2. Buscar client_id do usuário
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (clientError || !clientData) return [];
-
-      // 3. Buscar comunicados via communication_recipients
+      // Buscar comunicados via communication_recipients
       const { data, error } = await supabase
         .from('communication_recipients')
         .select(`
@@ -50,12 +41,12 @@ export function useCommunicationsData() {
             attachments
           )
         `)
-        .eq('client_id', clientData.id)
+        .eq('client_id', clientId)
         .order('sent_at', { foreignTable: 'communications', ascending: false });
 
       if (error) throw error;
 
-      // 4. Mapear para interface Communication
+      // Mapear para interface Communication
       return (data || [])
         .filter((item) => item.communication) // Filtra itens sem comunicação
         .map((item) => {
@@ -84,6 +75,7 @@ export function useCommunicationsData() {
           };
         });
     },
+    enabled: !!clientId,
   });
 
   // Mutation para marcar como lido
