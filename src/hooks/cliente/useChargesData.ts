@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { useClientId } from './useClientId';
 
 export type ChargeStatus = 'pending' | 'overdue' | 'paid';
 
@@ -38,68 +39,6 @@ function parseCurrencyToNumber(value: string): number {
   // Remove R$, spaces, dots (thousands separator) and convert comma to dot
   const cleaned = value.replace(/[R$\s.]/g, '').replace(',', '.');
   return parseFloat(cleaned) || 0;
-}
-
-async function fetchClientId(): Promise<string> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-
-  const { data: client, error } = await supabase
-    .from('clients')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!client) throw new Error('Cliente não encontrado');
-
-  return client.id;
-}
-
-async function fetchCharges(): Promise<Charge[]> {
-  const clientId = await fetchClientId();
-
-  const { data, error } = await supabase
-    .from('charges')
-    .select(`
-      id,
-      client_id,
-      patient_id,
-      patient_cpf,
-      payer_cpf,
-      description,
-      status,
-      amount,
-      sessions_count,
-      due_date,
-      payment_date,
-      health_receipt_issued,
-      created_at,
-      updated_at,
-      patients!inner(name)
-    `)
-    .eq('client_id', clientId)
-    .order('due_date', { ascending: false });
-
-  if (error) throw error;
-
-  return (data || []).map((charge: any) => ({
-    id: charge.id,
-    client_id: charge.client_id,
-    patient_id: charge.patient_id,
-    patient_cpf: charge.patient_cpf,
-    payer_cpf: charge.payer_cpf,
-    patient_name: charge.patients?.name || 'Paciente',
-    description: charge.description,
-    status: charge.status as ChargeStatus,
-    amount: Number(charge.amount),
-    sessions_count: charge.sessions_count,
-    due_date: charge.due_date,
-    payment_date: charge.payment_date,
-    health_receipt_issued: charge.health_receipt_issued,
-    created_at: charge.created_at,
-    updated_at: charge.updated_at,
-  }));
 }
 
 interface CreateChargeParams {
@@ -169,59 +108,63 @@ async function updateChargeInDb({ chargeId, clientId, data }: UpdateChargeParams
   if (error) throw error;
 }
 
-async function markChargeAsPaidInDb(chargeId: string, paymentDate: Date): Promise<void> {
-  const clientId = await fetchClientId();
-  
-  const { error } = await supabase
-    .from('charges')
-    .update({
-      status: 'paid',
-      payment_date: format(paymentDate, 'yyyy-MM-dd'),
-    })
-    .eq('id', chargeId)
-    .eq('client_id', clientId);
-
-  if (error) throw error;
-}
-
-async function deleteChargeInDb(chargeId: string): Promise<void> {
-  const clientId = await fetchClientId();
-  
-  const { error } = await supabase
-    .from('charges')
-    .delete()
-    .eq('id', chargeId)
-    .eq('client_id', clientId);
-
-  if (error) throw error;
-}
-
-async function markChargeAsUnpaidInDb(chargeId: string): Promise<void> {
-  const clientId = await fetchClientId();
-  
-  const { error } = await supabase
-    .from('charges')
-    .update({
-      status: 'pending',
-      payment_date: null,
-    })
-    .eq('id', chargeId)
-    .eq('client_id', clientId);
-
-  if (error) throw error;
-}
-
 export function useChargesData() {
   const queryClient = useQueryClient();
+  const { clientId } = useClientId();
 
   const { data: charges = [], isLoading, error } = useQuery({
-    queryKey: ['charges'],
-    queryFn: fetchCharges,
+    queryKey: ['charges', clientId],
+    queryFn: async (): Promise<Charge[]> => {
+      if (!clientId) return [];
+
+      const { data, error } = await supabase
+        .from('charges')
+        .select(`
+          id,
+          client_id,
+          patient_id,
+          patient_cpf,
+          payer_cpf,
+          description,
+          status,
+          amount,
+          sessions_count,
+          due_date,
+          payment_date,
+          health_receipt_issued,
+          created_at,
+          updated_at,
+          patients!inner(name)
+        `)
+        .eq('client_id', clientId)
+        .order('due_date', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map((charge: any) => ({
+        id: charge.id,
+        client_id: charge.client_id,
+        patient_id: charge.patient_id,
+        patient_cpf: charge.patient_cpf,
+        payer_cpf: charge.payer_cpf,
+        patient_name: charge.patients?.name || 'Paciente',
+        description: charge.description,
+        status: charge.status as ChargeStatus,
+        amount: Number(charge.amount),
+        sessions_count: charge.sessions_count,
+        due_date: charge.due_date,
+        payment_date: charge.payment_date,
+        health_receipt_issued: charge.health_receipt_issued,
+        created_at: charge.created_at,
+        updated_at: charge.updated_at,
+      }));
+    },
+    enabled: !!clientId,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: ChargeFormData) => {
-      const clientId = await fetchClientId();
+      if (!clientId) throw new Error('Cliente não encontrado');
       return createChargeInDb({ clientId, data });
     },
     onSuccess: () => {
@@ -233,7 +176,7 @@ export function useChargesData() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ chargeId, data }: { chargeId: string; data: ChargeEditData }) => {
-      const clientId = await fetchClientId();
+      if (!clientId) throw new Error('Cliente não encontrado');
       return updateChargeInDb({ chargeId, clientId, data });
     },
     onSuccess: () => {
@@ -245,7 +188,18 @@ export function useChargesData() {
 
   const markAsPaidMutation = useMutation({
     mutationFn: async ({ chargeId, paymentDate }: { chargeId: string; paymentDate: Date }) => {
-      return markChargeAsPaidInDb(chargeId, paymentDate);
+      if (!clientId) throw new Error('Cliente não encontrado');
+      
+      const { error } = await supabase
+        .from('charges')
+        .update({
+          status: 'paid',
+          payment_date: format(paymentDate, 'yyyy-MM-dd'),
+        })
+        .eq('id', chargeId)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });
@@ -256,7 +210,15 @@ export function useChargesData() {
 
   const deleteMutation = useMutation({
     mutationFn: async (chargeId: string) => {
-      return deleteChargeInDb(chargeId);
+      if (!clientId) throw new Error('Cliente não encontrado');
+      
+      const { error } = await supabase
+        .from('charges')
+        .delete()
+        .eq('id', chargeId)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });
@@ -267,7 +229,18 @@ export function useChargesData() {
 
   const markAsUnpaidMutation = useMutation({
     mutationFn: async (chargeId: string) => {
-      return markChargeAsUnpaidInDb(chargeId);
+      if (!clientId) throw new Error('Cliente não encontrado');
+      
+      const { error } = await supabase
+        .from('charges')
+        .update({
+          status: 'pending',
+          payment_date: null,
+        })
+        .eq('id', chargeId)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charges'] });

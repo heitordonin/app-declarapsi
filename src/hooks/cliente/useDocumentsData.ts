@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useClientId } from './useClientId';
 
 export interface Document {
   id: string;
@@ -12,33 +12,18 @@ export interface Document {
 }
 
 export function useDocumentsData() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  // Get client ID for the current user
-  const { data: clientData } = useQuery({
-    queryKey: ['client-id', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('user_id', user!.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const clientId = clientData?.id;
+  const { clientId } = useClientId();
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['permanent-documents', clientId],
     queryFn: async () => {
+      if (!clientId) return [];
+      
       const { data, error } = await supabase
         .from('permanent_documents')
         .select('id, name, file_path, file_name, uploaded_at, viewed_at')
-        .eq('client_id', clientId!)
+        .eq('client_id', clientId)
         .order('uploaded_at', { ascending: false });
 
       if (error) throw error;
@@ -59,7 +44,7 @@ export function useDocumentsData() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['permanent-documents', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['permanent-documents'] });
     },
   });
 
