@@ -1,181 +1,135 @@
 
-# Plano de Exportacao CSV para Carne Leao
+# Plano do Modulo de Gestao Mensal (Controle de Processos)
 
 ## Resumo Executivo
 
-Implementar a funcionalidade de exportacao de dados financeiros de clientes em formato CSV, permitindo que o contador baixe planilhas prontas para importacao no Carne Leao Web. Nesta primeira fase, construiremos apenas o front-end com a interface de selecao e geracao local do CSV.
-
----
-
-## Contexto do Carne Leao
-
-O Carne Leao Web da Receita Federal permite importacao de:
-- **Receitas**: rendimentos recebidos de pessoas fisicas
-- **Despesas**: gastos dedutiveis do livro-caixa
-
-Os layouts especificos de importacao serao definidos numa segunda etapa. Por enquanto, criaremos uma estrutura generica que podera ser adaptada.
+Criar um modulo dedicado para controle de processos internos do contador, permitindo acompanhar o status de lancamentos, estatisticas de clientes e controle de exportacoes para o Carne Leao. O modulo tera uma visao geral consolidada com possibilidade de drill-down para cada cliente.
 
 ---
 
 ## Arquitetura da Solucao
 
-### Fluxo de Usuario
+### Posicionamento no Sistema
+
+O novo modulo sera adicionado ao sidebar no grupo "Obrigacoes" como primeiro item, refletindo sua importancia no fluxo de trabalho:
 
 ```text
-Pagina Clientes
-     |
-     v
-Dropdown de Acoes do Cliente
-     |
-     v
-"Exportar dados" -> Abre Dialog
-     |
-     v
-Dialog de Exportacao:
-  - Seleciona Periodo (Mes/Ano)
-  - Seleciona tipo: Receitas / Despesas / Ambos
-  - Clique em Exportar
-     |
-     v
-Gera CSV localmente e faz download
+Obrigacoes
+  > Gestao         <- NOVO (rota: /contador/gestao)
+  > Calendario
+  > Relatorios
+  > Conferencia
+  > Protocolos
+```
+
+### Estrutura de Dados
+
+Para rastrear o status de exportacao manual, precisamos criar uma nova tabela:
+
+```sql
+CREATE TABLE public.client_monthly_status (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid REFERENCES clients(id) ON DELETE CASCADE NOT NULL,
+  year integer NOT NULL,
+  month integer NOT NULL CHECK (month >= 1 AND month <= 12),
+  
+  -- Status de exportacao (marcacao manual)
+  charges_exported_at timestamp with time zone,
+  charges_exported_by uuid,
+  expenses_exported_at timestamp with time zone,
+  expenses_exported_by uuid,
+  
+  -- Observacoes do contador
+  notes text,
+  
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  
+  UNIQUE(client_id, year, month)
+);
 ```
 
 ---
 
-## Componentes a Criar
+## Interface do Usuario
 
-### 1. Hook de Exportacao: `useClientExport.ts`
+### Visao Geral (Dashboard)
 
-Responsavel por buscar dados de receitas e despesas de um cliente especifico para um periodo.
+Pagina principal `/contador/gestao` com:
 
-```typescript
-// src/hooks/contador/useClientExport.ts
+**1. Seletor de Periodo**
+- Mes/Ano (igual ao Relatorios)
 
-interface ExportFilters {
-  clientId: string;
-  month: number;  // 1-12
-  year: number;
-}
+**2. KPIs Consolidados**
+| KPI | Descricao |
+|-----|-----------|
+| Total Clientes Ativos | Numero de clientes com status=active |
+| Faturamento Total | Soma de charges pagas no periodo |
+| Total Lancamentos | Soma de receitas + despesas |
+| Clientes Exportados | X de Y clientes ja exportados no mes |
 
-interface ChargeExportData {
-  paymentDate: string;
-  patientCpf: string;
-  payerCpf: string;
-  patientName: string;
-  description: string;
-  amount: number;
-  sessionsCount: number;
-}
+**3. Ranking de Clientes**
+Tabela ordenavel com colunas:
+| Coluna | Descricao |
+|--------|-----------|
+| Cliente | Nome do cliente |
+| Faturamento | Soma das receitas pagas |
+| Receitas | Qtd de lancamentos de receitas |
+| Despesas | Qtd de lancamentos de despesas |
+| Aliquota Est. | Calculo baseado na faixa do IRPF mensal |
+| Status Export. | Badges: Receitas / Despesas |
+| Acoes | Marcar exportado, ver detalhes |
 
-interface ExpenseExportData {
-  paymentDate: string;
-  categoryCode: string;
-  categoryName: string;
-  originalAmount: number;
-  deductibleAmount: number;
-  isResidential: boolean;
-  description: string | null;
-}
-
-export function useClientExport(filters: ExportFilters | null)
-```
-
-### 2. Utilitario CSV: `csv-utils.ts`
-
-Funcoes puras para geracao de CSV.
-
-```typescript
-// src/lib/csv-utils.ts
-
-// Escapa valores para CSV (aspas, virgulas, quebras de linha)
-function escapeCsvValue(value: string | number | null): string
-
-// Gera string CSV a partir de array de objetos
-function generateCsv<T>(data: T[], columns: CsvColumn<T>[]): string
-
-// Trigger download do arquivo
-function downloadCsv(content: string, filename: string): void
-```
-
-### 3. Dialog de Exportacao: `ExportClientDataDialog.tsx`
-
-Dialog que permite selecionar periodo e tipo de exportacao.
-
-```typescript
-// src/components/clientes/ExportClientDataDialog.tsx
-
-interface Props {
-  client: Client;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-// UI:
-// - Seletor de Mes (Janeiro a Dezembro)
-// - Seletor de Ano (ultimos 2 anos + ano atual)
-// - Checkbox: Exportar Receitas
-// - Checkbox: Exportar Despesas
-// - Botao: Exportar
-```
+**4. Alerta de Pendencias**
+- Clientes sem lancamentos no mes
+- Clientes com exportacao pendente
 
 ---
 
-## Alteracoes em Arquivos Existentes
+### Detalhes do Cliente (Drawer/Panel)
 
-### ClientesList.tsx
+Ao clicar em um cliente, abre um painel lateral com:
 
-Adicionar opcao "Exportar dados" no menu de acoes de cada cliente:
+**1. Resumo Financeiro**
+- Faturamento do mes
+- Total de despesas
+- Lucro liquido (receitas - despesas)
+- Aliquota efetiva estimada
+
+**2. Checklist de Exportacao**
+- [ ] Receitas exportadas - Botao "Marcar como exportado"
+- [ ] Despesas exportadas - Botao "Marcar como exportado"
+- Historico: "Exportado em DD/MM/YYYY por Usuario"
+
+**3. Estatisticas do Cliente**
+- Grafico de evolucao mensal (ultimos 6 meses)
+- Comparativo com media dos clientes
+
+**4. Acoes Rapidas**
+- Botao "Exportar CSV" (abre o dialog existente)
+- Botao "Ver lancamentos" (link para receitas/despesas do cliente)
+
+---
+
+## Calculo de Aliquota Efetiva
+
+Baseado na tabela progressiva mensal do IRPF 2024:
 
 ```typescript
-// Adicionar no DropdownMenuContent (apos Editar)
-<DropdownMenuItem onClick={() => setClientToExport(client)}>
-  <Download className="mr-2 h-4 w-4" />
-  Exportar dados
-</DropdownMenuItem>
-```
+const IRPF_TABLE = [
+  { limit: 2259.20, rate: 0, deduction: 0 },
+  { limit: 2826.65, rate: 0.075, deduction: 169.44 },
+  { limit: 3751.05, rate: 0.15, deduction: 381.44 },
+  { limit: 4664.68, rate: 0.225, deduction: 662.77 },
+  { limit: Infinity, rate: 0.275, deduction: 896.00 },
+];
 
----
-
-## Formato do CSV de Receitas
-
-| Coluna | Descricao | Exemplo |
-|--------|-----------|---------|
-| data_pagamento | Data do recebimento | 15/01/2024 |
-| cpf_paciente | CPF do paciente | 12345678900 |
-| cpf_pagador | CPF de quem pagou | 12345678900 |
-| nome_paciente | Nome do paciente | Maria Silva |
-| descricao | Descricao do servico | Sessao de psicoterapia |
-| valor | Valor recebido | 250.00 |
-| quantidade_sessoes | Numero de sessoes | 4 |
-
-### Exemplo CSV Receitas
-
-```text
-data_pagamento,cpf_paciente,cpf_pagador,nome_paciente,descricao,valor,quantidade_sessoes
-15/01/2024,12345678900,12345678900,Maria Silva,Sessao de psicoterapia,250.00,4
-20/01/2024,98765432100,11122233344,Joao Santos,Avaliacao psicologica,350.00,1
-```
-
----
-
-## Formato do CSV de Despesas
-
-| Coluna | Descricao | Exemplo |
-|--------|-----------|---------|
-| data_pagamento | Data do pagamento | 10/01/2024 |
-| codigo_categoria | Codigo da categoria | P10.01.00015 |
-| categoria | Nome da categoria | Contador |
-| valor_original | Valor pago | 500.00 |
-| valor_dedutivel | Valor dedutivel | 500.00 |
-| residencial | Se e despesa residencial | Nao |
-| descricao | Descricao adicional | Honorarios janeiro |
-
-### Exemplo CSV Despesas
-
-```text
-data_pagamento,codigo_categoria,categoria,valor_original,valor_dedutivel,residencial,descricao
-10/01/2024,P10.01.00015,Contador,500.00,500.00,Nao,Honorarios janeiro
-05/01/2024,P10.01.00007,Energia,200.00,40.00,Sim,Conta de luz
+function calculateEffectiveRate(monthlyIncome: number): number {
+  // Encontra a faixa
+  const bracket = IRPF_TABLE.find(b => monthlyIncome <= b.limit);
+  const tax = (monthlyIncome * bracket.rate) - bracket.deduction;
+  return tax > 0 ? (tax / monthlyIncome) * 100 : 0;
+}
 ```
 
 ---
@@ -184,9 +138,14 @@ data_pagamento,codigo_categoria,categoria,valor_original,valor_dedutivel,residen
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/lib/csv-utils.ts` | Utilitarios de geracao CSV |
-| `src/hooks/contador/useClientExport.ts` | Hook para buscar dados de exportacao |
-| `src/components/clientes/ExportClientDataDialog.tsx` | Dialog de exportacao |
+| `src/pages/contador/Gestao.tsx` | Pagina principal do modulo |
+| `src/hooks/contador/useClientMonthlyStats.ts` | Hook para buscar estatisticas |
+| `src/hooks/contador/useClientMonthlyStatus.ts` | Hook para status de exportacao |
+| `src/components/gestao/ClientStatsTable.tsx` | Tabela de ranking de clientes |
+| `src/components/gestao/ClientDetailPanel.tsx` | Painel lateral de detalhes |
+| `src/components/gestao/ExportChecklistCard.tsx` | Card de checklist de exportacao |
+| `src/components/gestao/GestaoKPIs.tsx` | Cards de KPIs |
+| `src/lib/irpf-utils.ts` | Funcoes de calculo de aliquota |
 
 ---
 
@@ -194,44 +153,156 @@ data_pagamento,codigo_categoria,categoria,valor_original,valor_dedutivel,residen
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/clientes/ClientesList.tsx` | Adicionar opcao de exportar no menu e estado para dialog |
+| `src/components/contador/ContadorSidebar.tsx` | Adicionar link "Gestao" como primeiro item |
+| `src/App.tsx` | Adicionar rota /contador/gestao |
 
 ---
 
-## Regras de Negocio
+## Migracoes de Banco de Dados
 
-1. **Filtro por periodo**: Apenas cobranças com `payment_date` no mes/ano selecionado (receitas efetivamente recebidas)
-2. **Filtro por periodo despesas**: Despesas com `payment_date` no mes/ano selecionado
-3. **Status paid apenas**: Somente receitas com status = 'paid' sao exportadas
-4. **Valores numericos**: Usar ponto como separador decimal (padrao CSV)
-5. **Datas**: Formato DD/MM/YYYY para compatibilidade com Excel brasileiro
-6. **Encoding**: UTF-8 com BOM para Excel reconhecer acentos
+### 1. Tabela client_monthly_status
+
+```sql
+-- Tabela para rastrear status de exportacao por cliente/mes
+CREATE TABLE public.client_monthly_status (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid REFERENCES clients(id) ON DELETE CASCADE NOT NULL,
+  year integer NOT NULL,
+  month integer NOT NULL CHECK (month >= 1 AND month <= 12),
+  charges_exported_at timestamp with time zone,
+  charges_exported_by uuid,
+  expenses_exported_at timestamp with time zone,
+  expenses_exported_by uuid,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  UNIQUE(client_id, year, month)
+);
+
+-- RLS
+ALTER TABLE public.client_monthly_status ENABLE ROW LEVEL SECURITY;
+
+-- Apenas admins podem gerenciar
+CREATE POLICY "Admins can manage client monthly status"
+  ON public.client_monthly_status FOR ALL
+  USING (
+    client_in_user_org(client_id, auth.uid()) 
+    AND has_role(auth.uid(), 'admin')
+  );
+
+-- Trigger para updated_at
+CREATE TRIGGER update_client_monthly_status_updated_at
+  BEFORE UPDATE ON public.client_monthly_status
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+---
+
+## Queries Principais
+
+### Estatisticas Agregadas por Cliente
+
+```typescript
+// Busca receitas e despesas agregadas por cliente para um mes
+const { data } = await supabase
+  .from('clients')
+  .select(`
+    id,
+    name,
+    code,
+    charges(amount, status, payment_date),
+    expenses(amount, deductible_amount, payment_date)
+  `)
+  .eq('status', 'active');
+
+// Processa no frontend para calcular:
+// - Soma de charges com status=paid e payment_date no mes
+// - Soma de expenses com payment_date no mes
+// - Calculo de aliquota
+```
+
+### Status de Exportacao
+
+```typescript
+// Busca status de exportacao para o mes
+const { data: exportStatus } = await supabase
+  .from('client_monthly_status')
+  .select('*')
+  .eq('year', selectedYear)
+  .eq('month', selectedMonth);
+```
+
+---
+
+## Fluxo de Marcacao de Exportacao
+
+```text
+1. Contador clica em "Marcar como exportado" na linha do cliente
+     |
+     v
+2. Dialog de confirmacao: "Confirma que as [receitas/despesas] de [Cliente] 
+   foram importadas no Carne Leao?"
+     |
+     v
+3. Sistema faz upsert em client_monthly_status:
+   - charges_exported_at = now()
+   - charges_exported_by = auth.uid()
+     |
+     v
+4. Badge muda de "Pendente" para "Exportado" com tooltip mostrando data/usuario
+```
+
+---
+
+## Mockup Visual
+
+```text
++------------------------------------------------------------------+
+| Gestao Mensal                               [Janeiro 2025 v]      |
++------------------------------------------------------------------+
+|                                                                   |
+| +------------+ +------------+ +------------+ +------------+       |
+| | 45         | | R$ 127.500 | | 892        | | 38/45      |       |
+| | Clientes   | | Faturamento| | Lancamentos| | Exportados |       |
+| +------------+ +------------+ +------------+ +------------+       |
+|                                                                   |
+| +---------------------------------------------------------------+ |
+| | Cliente      | Faturamento | Rec | Desp | Aliq. | Status Exp. | |
+| |--------------|-------------|-----|------|-------|-------------| |
+| | Maria Silva  | R$ 8.500    | 32  | 5    | 15,2% | [R] [D]     | |
+| | Joao Santos  | R$ 6.200    | 24  | 8    | 12,1% | [R] [ ]     | |
+| | Ana Costa    | R$ 4.100    | 18  | 3    |  7,5% | [ ] [ ]     | |
+| | ...          |             |     |      |       |             | |
+| +---------------------------------------------------------------+ |
+|                                                                   |
+| Legenda: [R] = Receitas exportadas  [D] = Despesas exportadas     |
++------------------------------------------------------------------+
+```
+
+---
+
+## Consideracoes de Performance
+
+1. **Agregacao no Backend**: Para evitar N+1 queries, considerar criar uma VIEW ou funcao no PostgreSQL que retorne dados ja agregados
+2. **Cache**: Usar staleTime adequado no TanStack Query (dados mudam apenas quando ha novos lancamentos)
+3. **Paginacao**: Implementar se numero de clientes for grande (>50)
 
 ---
 
 ## Testes Recomendados
 
-1. Exportar receitas de um cliente com dados no periodo selecionado
-2. Exportar despesas de um cliente com dados no periodo
-3. Testar exportacao de periodo sem dados (deve gerar CSV so com cabecalho)
-4. Verificar que arquivo abre corretamente no Excel
-5. Verificar que acentos aparecem corretamente
-6. Testar com cliente sem receitas/despesas cadastradas
+1. Verificar calculo de aliquota para diferentes faixas de renda
+2. Testar marcacao de exportacao e persistencia
+3. Verificar filtro por periodo (mes/ano)
+4. Testar ranking e ordenacao por diferentes colunas
+5. Verificar que apenas admins podem acessar/modificar
 
 ---
 
-## Proximos Passos (Fase 2)
+## Proximas Evolucoes (Fase 2)
 
-Apos validar o front-end, implementaremos:
-1. Layouts especificos do Carne Leao Web (quando voce fornecer a documentacao)
-2. Layouts especificos do Receita Saude
-3. Possivelmente mover geracao para Edge Function se volumes forem grandes
-
----
-
-## Impacto Esperado
-
-- Contador pode exportar dados de clientes em segundos
-- Formato CSV compativel com Excel e sistemas da Receita
-- Reducao significativa de trabalho manual na importacao
-- Base preparada para layouts especificos na proxima fase
+- Exportacao em lote (varios clientes de uma vez)
+- Alertas automaticos por email para clientes sem lancamentos
+- Integracao com layouts oficiais do Carne Leao
+- Dashboard de evolucao anual
