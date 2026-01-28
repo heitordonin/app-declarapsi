@@ -248,24 +248,24 @@ export function StandardDescriptionsDialog({
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 shrink-0"
+                      className="h-10 w-10 shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleStartEdit(item);
                       }}
                     >
-                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 shrink-0"
+                      className="h-10 w-10 shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeleteConfirmId(item.id);
                       }}
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </>
                 )}

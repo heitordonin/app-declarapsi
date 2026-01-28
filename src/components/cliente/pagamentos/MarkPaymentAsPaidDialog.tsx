@@ -158,6 +158,7 @@ export function MarkPaymentAsPaidDialog({
         open={open} 
         onOpenChange={onOpenChange}
         shouldScaleBackground={false}
+        repositionInputs={false}
       >
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader className="bg-primary text-primary-foreground rounded-t-[10px]">

@@ -232,12 +232,12 @@ export function ExpenseFilters({
         variant="ghost" 
         onClick={handleClear}
         disabled={activeFiltersCount === 0}
-        className="text-muted-foreground"
+        className="text-muted-foreground h-11"
       >
         <X className="h-4 w-4 mr-1" />
         Limpar
       </Button>
-      <Button onClick={handleApply}>
+      <Button onClick={handleApply} className="h-11">
         Aplicar filtros
       </Button>
     </div>
@@ -260,7 +260,7 @@ export function ExpenseFilters({
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
+      <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
         <DrawerTrigger asChild>
           {TriggerButton}
         </DrawerTrigger>
