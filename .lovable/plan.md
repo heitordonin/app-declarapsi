@@ -1,189 +1,80 @@
 
-# Plano de Adaptacao para Layout Oficial do Carne Leao Web
+# Plano: Exportacao em Lote no Modulo de Gestao Mensal
 
-## Resumo Executivo
+## Objetivo
 
-Adaptar o sistema de exportacao existente para gerar arquivos CSV 100% compativeis com o Carne Leao Web da Receita Federal. O manual fornecido define layouts especificos para:
-- **Rendimentos com Receita Saude** (16 campos)
-- **Pagamentos Dedutiveis P10** (4-7 campos)
+Permitir que o contador selecione multiplos clientes na tabela de Gestao Mensal e exporte os dados de todos de uma so vez, gerando arquivos CSV individuais para cada cliente no formato Carne Leao.
 
 ---
 
-## Principais Diferencas vs Implementacao Atual
-
-| Aspecto | Atual | Carne Leao |
-|---------|-------|------------|
-| Separador | Virgula (`,`) | Ponto e virgula (`;`) |
-| Cabecalho | Sim | Nao (apenas dados) |
-| Valor monetario | `1500.00` | `1500,00` |
-| Campos extras | Nome paciente, qtd sessoes | Codigo ocupacao, indicadores |
-| Layout receitas | 7 campos proprios | 16 campos oficiais |
-| Layout despesas | 7 campos proprios | 4 campos minimos |
-
----
-
-## Arquitetura da Solucao
-
-### Dois Modos de Exportacao
-
-O sistema oferecera duas opcoes:
-
-1. **Formato Interno (atual)** - Para controle do escritorio
-2. **Formato Carne Leao** - Para importacao direta na Receita Federal
-
----
-
-## Formato Oficial: Rendimentos (Receita Saude)
-
-### Layout de 16 Campos
-
-| # | Campo | Origem | Valor |
-|---|-------|--------|-------|
-| 1 | Data | `charges.payment_date` | DD/MM/AAAA |
-| 2 | Codigo rendimento | Fixo | `R01.001.001` |
-| 3 | Codigo ocupacao | Fixo | `255` (Psicologo) |
-| 4 | Valor | `charges.amount` | `500,00` |
-| 5 | Deducao | Vazio | `` |
-| 6 | Historico | `charges.description` | Texto |
-| 7 | Indicador recebido de | Fixo | `PF` |
-| 8 | CPF pagador | `charges.payer_cpf` | 11 digitos |
-| 9 | CPF beneficiario | `charges.patient_cpf` | 11 digitos |
-| 10 | CPF nao informado | Vazio | `` |
-| 11 | CNPJ | Vazio | `` |
-| 12 | Indicador IRRF | Vazio | `` |
-| 13 | Valor IRRF | Vazio | `` |
-| 14 | Indicador recibo | Fixo | `S` |
-| 15 | CPF profissional | `clients.cpf` | 11 digitos |
-| 16 | Registro prof. | `clients.crp_number` | Opcional |
-
-### Exemplo de Linha Gerada
+## Fluxo de Usuario
 
 ```text
-15/01/2026;R01.001.001;255;500,00;;Sessao de psicoterapia;PF;12345678901;12345678901;;;;;S;98765432109;CRP06/123456
+1. Contador acessa /contador/gestao
+     |
+     v
+2. Tabela exibe checkbox na primeira coluna de cada linha
+     |
+     v
+3. Contador seleciona clientes desejados (ou "Selecionar todos")
+     |
+     v
+4. Botao "Exportar X clientes" aparece na barra de acoes
+     |
+     v
+5. Clica no botao -> Abre dialog de confirmacao
+     |
+     v
+6. Confirma -> Sistema gera arquivos CSV para cada cliente
+     |
+     v
+7. Arquivos sao baixados automaticamente (download sequencial)
+     |
+     v
+8. Toast informa sucesso: "12 arquivo(s) exportado(s) para 6 cliente(s)"
 ```
 
 ---
 
-## Formato Oficial: Pagamentos Dedutiveis (P10)
+## Interface Proposta
 
-### Layout de 4 Campos (minimo)
-
-| # | Campo | Origem | Valor |
-|---|-------|--------|-------|
-| 1 | Data | `expenses.payment_date` | DD/MM/AAAA |
-| 2 | Codigo | `expense_categories.code` | `P10.01.00002` |
-| 3 | Valor | `expenses.deductible_amount` | `1500,00` |
-| 4 | Historico | `expenses.description` | Texto |
-
-### Exemplo de Linha Gerada
+### Tabela com Selecao
 
 ```text
-05/01/2026;P10.01.00002;1500,00;Aluguel consultorio Janeiro/2026
++---+----------------------------------------------------------+
+| [ ] Selecionar todos                                         |
++---+----------------------------------------------------------+
+| Checkbox | Cliente      | Faturamento | Rec | Desp | Status  |
+|----------|--------------|-------------|-----|------|---------|
+| [x]      | Maria Silva  | R$ 8.500    | 32  | 5    | [R] [D] |
+| [x]      | Joao Santos  | R$ 6.200    | 24  | 8    | [R] [ ] |
+| [ ]      | Ana Costa    | R$ 4.100    | 18  | 3    | [ ] [ ] |
++---+----------------------------------------------------------+
+
+           [ Exportar 2 clientes ]  <- Botao flutuante/fixo
 ```
 
----
-
-## Alteracoes no csv-utils.ts
-
-### Novas Funcoes
-
-```typescript
-// Formata valor para Carne Leao (virgula como decimal)
-export function formatValueCarneLeao(value: number): string {
-  return value.toFixed(2).replace('.', ',');
-}
-
-// Gera CSV com ponto e virgula (sem cabecalho)
-export function generateCsvCarneLeao<T>(
-  data: T[], 
-  columns: CsvColumnCarneLeao<T>[]
-): string {
-  const BOM = '\uFEFF';
-  const rows = data.map(item => 
-    columns.map(col => col.render(item) || '').join(';')
-  );
-  return BOM + rows.join('\n');
-}
-```
-
----
-
-## Alteracoes no useClientExport.ts
-
-### Novos Dados Necessarios
-
-O hook precisa retornar dados adicionais do cliente:
-
-```typescript
-export interface ClientExportData {
-  charges: ChargeExportData[];
-  expenses: ExpenseExportData[];
-  client: {
-    cpf: string;
-    crpNumber: string | null;
-  };
-}
-```
-
-A query de charges permanece igual.
-A query de expenses deve usar `deductible_amount` (valor ja calculado).
-
----
-
-## Nova Interface de Exportacao
-
-### Dialog Atualizado
-
-O dialog de exportacao tera opcao de formato:
+### Dialog de Exportacao em Lote
 
 ```text
 +--------------------------------------------------+
-|        Exportar Dados para Carne Leao            |
+|        Exportar em Lote - Carne Leao             |
 +--------------------------------------------------+
 |                                                  |
-|  Cliente: Maria Silva (CPF: 123.456.789-01)      |
-|  CRP: CRP06/123456                               |
+|  Periodo: Janeiro de 2026                        |
 |                                                  |
-|  Periodo: [Janeiro v] [2026 v]                   |
+|  Clientes selecionados: 6                        |
+|  - Total de receitas: 142 registros              |
+|  - Total de despesas: 38 registros               |
 |                                                  |
-|  Formato de exportacao:                          |
-|  ( ) Formato interno (controle do escritorio)    |
-|  (x) Formato Carne Leao (importacao RF)          |
+|  [ ] Exportar Rendimentos (Receita Saude)        |
+|  [ ] Exportar Despesas Dedutiveis (P10)          |
 |                                                  |
-|  O que exportar?                                 |
-|  [x] Rendimentos (Receita Saude) - 32 registros  |
-|  [x] Despesas Dedutiveis (P10) - 8 registros     |
+|  [ ] Marcar como exportado apos download         |
 |                                                  |
-|  [ Cancelar ]              [ Exportar CSV ]      |
+|  [ Cancelar ]              [ Exportar Todos ]    |
 +--------------------------------------------------+
 ```
-
----
-
-## Validacoes a Implementar
-
-### Antes da Exportacao
-
-1. **CPF do cliente** - Deve ter 11 digitos validos
-2. **CPF do paciente/pagador** - Todos devem ser validos
-3. **Limite de linhas** - Maximo 1000 por arquivo
-4. **Ano-calendario** - Datas devem ser do periodo selecionado
-
-### Mensagens de Erro
-
-- "CPF invalido encontrado. Verifique os cadastros antes de exportar."
-- "Limite de 1000 linhas excedido. Exporte em periodos menores."
-
----
-
-## Arquivos a Modificar
-
-| Arquivo | Alteracoes |
-|---------|------------|
-| `src/lib/csv-utils.ts` | Adicionar funcoes para formato Carne Leao |
-| `src/hooks/contador/useClientExport.ts` | Incluir dados do cliente (CPF, CRP) |
-| `src/components/clientes/ExportClientDataDialog.tsx` | Adicionar opcao de formato e validacoes |
-| `src/types/database.ts` | Adicionar `crp_number` ao tipo Client |
 
 ---
 
@@ -191,170 +82,179 @@ O dialog de exportacao tera opcao de formato:
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/lib/carne-leao-export.ts` | Geradores de linhas para cada layout oficial |
-| `src/lib/cpf-validator.ts` | Validacao completa de CPF |
+| `src/components/gestao/BatchExportDialog.tsx` | Dialog de exportacao em lote |
+| `src/hooks/contador/useBatchExport.ts` | Hook para buscar dados de multiplos clientes |
 
 ---
 
-## Funcao de Geracao: Rendimentos
+## Arquivos a Modificar
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/components/gestao/ClientStatsTable.tsx` | Adicionar checkboxes de selecao e callback para clientes selecionados |
+| `src/pages/contador/Gestao.tsx` | Gerenciar estado de selecao e integrar dialog de lote |
+
+---
+
+## Detalhes Tecnicos
+
+### 1. ClientStatsTable - Selecao de Clientes
+
+Adicionar:
+- Coluna de checkbox no inicio de cada linha
+- Checkbox "Selecionar todos" no header
+- Callback `onSelectionChange(selectedIds: Set<string>)` para o pai
+- Estado interno `selectedIds: Set<string>`
 
 ```typescript
-// src/lib/carne-leao-export.ts
-
-interface RendimentoData {
-  dataRecebimento: string;
-  valor: number;
-  historico: string;
-  cpfPagador: string;
-  cpfBeneficiario: string;
-  cpfProfissional: string;
-  registroProfissional: string | null;
-}
-
-export function gerarLinhaRendimento(data: RendimentoData): string {
-  const campos = [
-    formatDateBR(data.dataRecebimento),      // 1
-    'R01.001.001',                            // 2
-    '255',                                    // 3
-    formatValueCarneLeao(data.valor),         // 4
-    '',                                       // 5
-    data.historico,                           // 6
-    'PF',                                     // 7
-    cleanCpf(data.cpfPagador),                // 8
-    cleanCpf(data.cpfBeneficiario),           // 9
-    '',                                       // 10
-    '',                                       // 11
-    '',                                       // 12
-    '',                                       // 13
-    'S',                                      // 14
-    cleanCpf(data.cpfProfissional),           // 15
-    data.registroProfissional || ''           // 16
-  ];
-  return campos.join(';');
+interface ClientStatsTableProps {
+  // ... existentes
+  onSelectionChange?: (selectedIds: Set<string>) => void;
+  selectedIds?: Set<string>;
 }
 ```
 
----
+### 2. Gestao.tsx - Gerenciamento de Estado
 
-## Funcao de Geracao: Pagamentos
+Adicionar:
+- Estado `selectedClientIds: Set<string>`
+- Botao de exportacao em lote (visivel quando `selectedClientIds.size > 0`)
+- Estado para controlar abertura do `BatchExportDialog`
+
+### 3. useBatchExport Hook
+
+Hook que busca dados de multiplos clientes em paralelo:
 
 ```typescript
-interface PagamentoData {
-  dataPagamento: string;
-  codigoDespesa: string;
-  valor: number;
-  historico: string | null;
+interface BatchExportFilters {
+  clientIds: string[];
+  month: number;
+  year: number;
 }
 
-export function gerarLinhaPagamento(data: PagamentoData): string {
-  const campos = [
-    formatDateBR(data.dataPagamento),
-    data.codigoDespesa,
-    formatValueCarneLeao(data.valor),
-    data.historico || ''
-  ];
-  return campos.join(';');
+interface BatchExportResult {
+  clientId: string;
+  clientName: string;
+  data: ClientExportData;
+  hasErrors: boolean;
+  errorMessage?: string;
+}
+
+export function useBatchExport(filters: BatchExportFilters | null) {
+  return useQuery({
+    queryKey: ['batch-export', filters?.clientIds, filters?.month, filters?.year],
+    queryFn: async (): Promise<BatchExportResult[]> => {
+      // Busca dados de todos os clientes em paralelo
+      const promises = filters!.clientIds.map(clientId => 
+        fetchClientExportData(clientId, filters!.month, filters!.year)
+      );
+      return Promise.all(promises);
+    },
+    enabled: !!filters && filters.clientIds.length > 0,
+  });
+}
+```
+
+### 4. BatchExportDialog - Logica de Exportacao
+
+O dialog ira:
+1. Receber lista de `clientIds` selecionados
+2. Carregar dados de todos os clientes usando `useBatchExport`
+3. Exibir resumo (total de receitas/despesas)
+4. Validar CPFs de todos os clientes
+5. Gerar arquivos CSV para cada cliente
+6. Download sequencial (com pequeno delay para evitar bloqueio do browser)
+7. Opcionalmente marcar todos como exportados
+
+```typescript
+// Download sequencial com delay
+async function downloadAllFiles(files: { content: string; filename: string }[]) {
+  for (const file of files) {
+    downloadCsv(file.content, file.filename);
+    await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay
+  }
 }
 ```
 
 ---
 
-## Fluxo de Exportacao Carne Leao
+## Validacoes
 
-```text
-1. Usuario seleciona cliente e periodo
-     |
-     v
-2. Sistema busca charges (status=paid) e expenses do periodo
-     |
-     v
-3. Sistema busca dados do cliente (CPF, CRP)
-     |
-     v
-4. Validacao: CPFs validos? Limite de linhas?
-     |
-     +--> Erro: Exibe mensagem e bloqueia exportacao
-     |
-     v
-5. Gera arquivo de Rendimentos (se selecionado)
-   - Nome: rendimentos_[codigo]_[mesano].csv
-   - Layout: 16 campos, separador ;
-     |
-     v
-6. Gera arquivo de Pagamentos (se selecionado)
-   - Nome: pagamentos_[codigo]_[mesano].csv
-   - Layout: 4 campos, separador ;
-     |
-     v
-7. Download dos arquivos + toast de sucesso
-```
+1. **CPFs Invalidos**: Clientes com CPFs invalidos serao listados e excluidos da exportacao
+2. **Sem Lancamentos**: Clientes sem receitas/despesas no periodo serao avisados
+3. **Limite por Arquivo**: Cada arquivo individual respeita o limite de 1000 linhas
 
 ---
 
 ## Nomenclatura dos Arquivos
 
-| Tipo | Formato Interno | Formato Carne Leao |
-|------|-----------------|-------------------|
-| Receitas | `receitas_ABC_janeiro_2026.csv` | `rendimentos_ABC_202601.csv` |
-| Despesas | `despesas_ABC_janeiro_2026.csv` | `pagamentos_ABC_202601.csv` |
+Cada cliente gera seus proprios arquivos:
+- `Maria Silva_receita saude_01-2026.csv`
+- `Maria Silva_despesas_01-2026.csv`
+- `Joao Santos_receita saude_01-2026.csv`
+- `Joao Santos_despesas_01-2026.csv`
+- ...
 
 ---
 
-## Codigos P10 - Verificacao
+## Opcao: Marcar como Exportado
 
-Os codigos ja cadastrados no sistema:
+Checkbox opcional no dialog:
+- Se marcado, apos o download bem-sucedido, o sistema automaticamente marca `charges_exported_at` e/ou `expenses_exported_at` para todos os clientes exportados
 
-| Codigo | Nome | Status |
-|--------|------|--------|
-| P10.01.00001 | Agua | OK |
-| P10.01.00002 | Aluguel | OK |
-| P10.01.00003 | Condominio | OK |
-| P10.01.00004 | CRP - Conselho de classe | OK |
-| P10.01.00007 | Energia | OK |
-| P10.01.00008 | Gas | OK |
-| P10.01.00009 | IPTU | OK |
-| P10.01.00010 | ISS | OK |
-| P10.01.00011 | Material de limpeza | OK |
-| P10.01.00012 | Material de escritorio | OK |
-| P10.01.00013 | Remuneracao paga a terceiros | OK |
-| P10.01.00014 | Telefone/celular do consultorio | OK |
-
-Todos os codigos estao alinhados com o manual.
+```typescript
+if (markAsExported) {
+  await Promise.all(
+    successfulExports.map(clientId => 
+      Promise.all([
+        exportCharges && markExported({ clientId, type: 'charges' }),
+        exportExpenses && markExported({ clientId, type: 'expenses' }),
+      ])
+    )
+  );
+}
+```
 
 ---
 
-## Despesas Residenciais - Calculo Importante
+## Feedback Visual
 
-O manual nao menciona, mas no sistema atual temos um calculo:
-- Despesas residenciais: `deductible_amount` = 20% do `amount`
-- Despesas nao-residenciais: `deductible_amount` = 100% do `amount`
+### Durante Exportacao
 
-Para exportacao no Carne Leao, usamos sempre `deductible_amount`.
+```text
++--------------------------------------------------+
+|  Exportando...                                   |
+|                                                  |
+|  [=========>                    ] 3/6 clientes   |
+|                                                  |
+|  Gerando: Joao Santos...                         |
++--------------------------------------------------+
+```
+
+### Resultado
+
+```text
+Toast: "Exportacao em lote concluida"
+       "12 arquivos gerados para 6 clientes.
+        2 clientes ignorados (CPF invalido)."
+```
+
+---
+
+## Consideracoes de UX
+
+1. **Persistencia de Selecao**: A selecao e limpa ao mudar o mes/ano selecionado
+2. **Filtro de Busca**: Selecionar todos considera apenas clientes visiveis (apos filtro)
+3. **Desabilitar durante Carregamento**: Botao de exportar desabilitado enquanto dados estao carregando
+4. **Limite de Selecao**: Considerar alertar se mais de 50 clientes forem selecionados (muitos downloads)
 
 ---
 
 ## Testes Recomendados
 
-1. Exportar rendimentos e verificar todos os 16 campos
-2. Exportar pagamentos e verificar formato
-3. Testar CPF invalido (deve bloquear exportacao)
-4. Testar com mais de 1000 lancamentos (deve alertar)
-5. Importar arquivo gerado no Carne Leao Web (ambiente real)
-6. Verificar que caracteres especiais nao quebram o CSV
-
----
-
-## Consideracoes Finais
-
-### Campos que Dependem do Cadastro
-
-Para a exportacao funcionar corretamente:
-- Cliente deve ter CPF preenchido
-- Cliente pode ter CRP preenchido (opcional mas recomendado)
-- Cada charge deve ter `patient_cpf` e `payer_cpf` preenchidos
-
-### Integração com Módulo Gestão
-
-O módulo de Gestão Mensal já implementado será o ponto de entrada principal para exportação. A funcionalidade poderá ser acessada:
-1. Pelo painel de detalhes do cliente (botão "Exportar CSV")
-2. Pelo menu de ações na lista de clientes
+1. Selecionar 2-3 clientes e exportar - verificar arquivos gerados
+2. Testar com cliente sem dados no periodo - deve ser ignorado
+3. Testar com cliente com CPF invalido - deve alertar e permitir continuar sem ele
+4. Testar "Selecionar todos" com filtro de busca ativo
+5. Testar marcacao automatica como exportado
+6. Verificar que downloads nao bloqueiam o browser (delay entre arquivos)
