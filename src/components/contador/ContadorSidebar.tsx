@@ -37,10 +37,10 @@ const sidebarModules = [
     title: 'Obrigações',
     icon: ClipboardList,
     items: [
+      { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
       { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
       { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
       { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
-      { icon: BarChart, label: 'Protocolos', path: '/contador/protocolos' },
     ]
   },
   {

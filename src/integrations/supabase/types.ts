@@ -153,6 +153,56 @@ export type Database = {
           },
         ]
       }
+      client_monthly_status: {
+        Row: {
+          charges_exported_at: string | null
+          charges_exported_by: string | null
+          client_id: string
+          created_at: string | null
+          expenses_exported_at: string | null
+          expenses_exported_by: string | null
+          id: string
+          month: number
+          notes: string | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          charges_exported_at?: string | null
+          charges_exported_by?: string | null
+          client_id: string
+          created_at?: string | null
+          expenses_exported_at?: string | null
+          expenses_exported_by?: string | null
+          id?: string
+          month: number
+          notes?: string | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          charges_exported_at?: string | null
+          charges_exported_by?: string | null
+          client_id?: string
+          created_at?: string | null
+          expenses_exported_at?: string | null
+          expenses_exported_by?: string | null
+          id?: string
+          month?: number
+          notes?: string | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_monthly_status_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_obligations: {
         Row: {
           active: boolean

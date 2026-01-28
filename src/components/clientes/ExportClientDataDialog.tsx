@@ -31,7 +31,9 @@ import {
 } from "@/lib/csv-utils";
 
 interface Props {
-  client: Client;
+  client?: Client;
+  clientId?: string;
+  clientName?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -79,7 +81,7 @@ const expenseColumns: CsvColumn<ExpenseExportData>[] = [
   { header: "descricao", render: (item) => item.description || "" },
 ];
 
-export function ExportClientDataDialog({ client, open, onOpenChange }: Props) {
+export function ExportClientDataDialog({ client, clientId, clientName, open, onOpenChange }: Props) {
   const currentDate = new Date();
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
   const [year, setYear] = useState(currentDate.getFullYear());
@@ -87,8 +89,13 @@ export function ExportClientDataDialog({ client, open, onOpenChange }: Props) {
   const [exportExpenses, setExportExpenses] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Suporta tanto client object quanto clientId/clientName separados
+  const resolvedClientId = client?.id || clientId;
+  const resolvedClientName = client?.name || clientName || '';
+  const resolvedClientCode = client?.code || '';
+
   const { data, isLoading, refetch } = useClientExport(
-    open ? { clientId: client.id, month, year } : null
+    open && resolvedClientId ? { clientId: resolvedClientId, month, year } : null
   );
 
   const yearOptions = getYearOptions();
@@ -115,7 +122,7 @@ export function ExportClientDataDialog({ client, open, onOpenChange }: Props) {
         throw new Error("Não foi possível carregar os dados");
       }
 
-      const clientCode = client.code || "cliente";
+      const clientCode = resolvedClientCode || "cliente";
       const periodLabel = `${selectedMonthLabel.toLowerCase()}_${year}`;
 
       let filesExported = 0;
@@ -167,7 +174,7 @@ export function ExportClientDataDialog({ client, open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Exportar Dados</DialogTitle>
           <DialogDescription>
-            Exporte receitas e despesas de <strong>{client.name}</strong> para CSV.
+            Exporte receitas e despesas de <strong>{resolvedClientName}</strong> para CSV.
           </DialogDescription>
         </DialogHeader>
 

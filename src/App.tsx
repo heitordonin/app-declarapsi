@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import CadastroPaciente from "./pages/CadastroPaciente";
 import ContadorLayout from "./pages/contador/ContadorLayout";
+import Gestao from "./pages/contador/Gestao";
 import Obrigacoes from "./pages/contador/Obrigacoes";
 import Relatorios from "./pages/contador/Relatorios";
 import Conferencia from "./pages/contador/Conferencia";
@@ -78,6 +79,7 @@ const App = () => (
                 <ContadorLayout />
               </ProtectedRoute>
             }>
+              <Route path="gestao" element={<Gestao />} />
               <Route path="obrigacoes" element={<Obrigacoes />} />
               <Route path="relatorios" element={<Relatorios />} />
               <Route path="conferencia" element={<Conferencia />} />
