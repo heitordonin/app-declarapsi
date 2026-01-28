@@ -27,9 +27,16 @@ export interface ExpenseExportData {
   description: string | null;
 }
 
+export interface ClientData {
+  cpf: string;
+  crpNumber: string | null;
+  code: string;
+}
+
 export interface ClientExportData {
   charges: ChargeExportData[];
   expenses: ExpenseExportData[];
+  client: ClientData;
 }
 
 export function useClientExport(filters: ExportFilters | null) {
@@ -37,10 +44,19 @@ export function useClientExport(filters: ExportFilters | null) {
     queryKey: ["client-export", filters?.clientId, filters?.month, filters?.year],
     queryFn: async (): Promise<ClientExportData> => {
       if (!filters) {
-        return { charges: [], expenses: [] };
+        return { charges: [], expenses: [], client: { cpf: '', crpNumber: null, code: '' } };
       }
 
       const { clientId, month, year } = filters;
+
+      // Busca dados do cliente (CPF, CRP)
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("cpf, crp_number, code")
+        .eq("id", clientId)
+        .single();
+
+      if (clientError) throw clientError;
 
       // Calcula o range de datas para o mês selecionado
       const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
@@ -107,7 +123,15 @@ export function useClientExport(filters: ExportFilters | null) {
         description: expense.description,
       }));
 
-      return { charges, expenses };
+      return { 
+        charges, 
+        expenses, 
+        client: {
+          cpf: clientData.cpf || '',
+          crpNumber: clientData.crp_number || null,
+          code: clientData.code || '',
+        }
+      };
     },
     enabled: !!filters,
   });
