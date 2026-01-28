@@ -1,136 +1,189 @@
 
-# Plano do Modulo de Gestao Mensal (Controle de Processos)
+# Plano de Adaptacao para Layout Oficial do Carne Leao Web
 
 ## Resumo Executivo
 
-Criar um modulo dedicado para controle de processos internos do contador, permitindo acompanhar o status de lancamentos, estatisticas de clientes e controle de exportacoes para o Carne Leao. O modulo tera uma visao geral consolidada com possibilidade de drill-down para cada cliente.
+Adaptar o sistema de exportacao existente para gerar arquivos CSV 100% compativeis com o Carne Leao Web da Receita Federal. O manual fornecido define layouts especificos para:
+- **Rendimentos com Receita Saude** (16 campos)
+- **Pagamentos Dedutiveis P10** (4-7 campos)
+
+---
+
+## Principais Diferencas vs Implementacao Atual
+
+| Aspecto | Atual | Carne Leao |
+|---------|-------|------------|
+| Separador | Virgula (`,`) | Ponto e virgula (`;`) |
+| Cabecalho | Sim | Nao (apenas dados) |
+| Valor monetario | `1500.00` | `1500,00` |
+| Campos extras | Nome paciente, qtd sessoes | Codigo ocupacao, indicadores |
+| Layout receitas | 7 campos proprios | 16 campos oficiais |
+| Layout despesas | 7 campos proprios | 4 campos minimos |
 
 ---
 
 ## Arquitetura da Solucao
 
-### Posicionamento no Sistema
+### Dois Modos de Exportacao
 
-O novo modulo sera adicionado ao sidebar no grupo "Obrigacoes" como primeiro item, refletindo sua importancia no fluxo de trabalho:
+O sistema oferecera duas opcoes:
+
+1. **Formato Interno (atual)** - Para controle do escritorio
+2. **Formato Carne Leao** - Para importacao direta na Receita Federal
+
+---
+
+## Formato Oficial: Rendimentos (Receita Saude)
+
+### Layout de 16 Campos
+
+| # | Campo | Origem | Valor |
+|---|-------|--------|-------|
+| 1 | Data | `charges.payment_date` | DD/MM/AAAA |
+| 2 | Codigo rendimento | Fixo | `R01.001.001` |
+| 3 | Codigo ocupacao | Fixo | `255` (Psicologo) |
+| 4 | Valor | `charges.amount` | `500,00` |
+| 5 | Deducao | Vazio | `` |
+| 6 | Historico | `charges.description` | Texto |
+| 7 | Indicador recebido de | Fixo | `PF` |
+| 8 | CPF pagador | `charges.payer_cpf` | 11 digitos |
+| 9 | CPF beneficiario | `charges.patient_cpf` | 11 digitos |
+| 10 | CPF nao informado | Vazio | `` |
+| 11 | CNPJ | Vazio | `` |
+| 12 | Indicador IRRF | Vazio | `` |
+| 13 | Valor IRRF | Vazio | `` |
+| 14 | Indicador recibo | Fixo | `S` |
+| 15 | CPF profissional | `clients.cpf` | 11 digitos |
+| 16 | Registro prof. | `clients.crp_number` | Opcional |
+
+### Exemplo de Linha Gerada
 
 ```text
-Obrigacoes
-  > Gestao         <- NOVO (rota: /contador/gestao)
-  > Calendario
-  > Relatorios
-  > Conferencia
-  > Protocolos
-```
-
-### Estrutura de Dados
-
-Para rastrear o status de exportacao manual, precisamos criar uma nova tabela:
-
-```sql
-CREATE TABLE public.client_monthly_status (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id uuid REFERENCES clients(id) ON DELETE CASCADE NOT NULL,
-  year integer NOT NULL,
-  month integer NOT NULL CHECK (month >= 1 AND month <= 12),
-  
-  -- Status de exportacao (marcacao manual)
-  charges_exported_at timestamp with time zone,
-  charges_exported_by uuid,
-  expenses_exported_at timestamp with time zone,
-  expenses_exported_by uuid,
-  
-  -- Observacoes do contador
-  notes text,
-  
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  
-  UNIQUE(client_id, year, month)
-);
+15/01/2026;R01.001.001;255;500,00;;Sessao de psicoterapia;PF;12345678901;12345678901;;;;;S;98765432109;CRP06/123456
 ```
 
 ---
 
-## Interface do Usuario
+## Formato Oficial: Pagamentos Dedutiveis (P10)
 
-### Visao Geral (Dashboard)
+### Layout de 4 Campos (minimo)
 
-Pagina principal `/contador/gestao` com:
+| # | Campo | Origem | Valor |
+|---|-------|--------|-------|
+| 1 | Data | `expenses.payment_date` | DD/MM/AAAA |
+| 2 | Codigo | `expense_categories.code` | `P10.01.00002` |
+| 3 | Valor | `expenses.deductible_amount` | `1500,00` |
+| 4 | Historico | `expenses.description` | Texto |
 
-**1. Seletor de Periodo**
-- Mes/Ano (igual ao Relatorios)
+### Exemplo de Linha Gerada
 
-**2. KPIs Consolidados**
-| KPI | Descricao |
-|-----|-----------|
-| Total Clientes Ativos | Numero de clientes com status=active |
-| Faturamento Total | Soma de charges pagas no periodo |
-| Total Lancamentos | Soma de receitas + despesas |
-| Clientes Exportados | X de Y clientes ja exportados no mes |
-
-**3. Ranking de Clientes**
-Tabela ordenavel com colunas:
-| Coluna | Descricao |
-|--------|-----------|
-| Cliente | Nome do cliente |
-| Faturamento | Soma das receitas pagas |
-| Receitas | Qtd de lancamentos de receitas |
-| Despesas | Qtd de lancamentos de despesas |
-| Aliquota Est. | Calculo baseado na faixa do IRPF mensal |
-| Status Export. | Badges: Receitas / Despesas |
-| Acoes | Marcar exportado, ver detalhes |
-
-**4. Alerta de Pendencias**
-- Clientes sem lancamentos no mes
-- Clientes com exportacao pendente
+```text
+05/01/2026;P10.01.00002;1500,00;Aluguel consultorio Janeiro/2026
+```
 
 ---
 
-### Detalhes do Cliente (Drawer/Panel)
+## Alteracoes no csv-utils.ts
 
-Ao clicar em um cliente, abre um painel lateral com:
-
-**1. Resumo Financeiro**
-- Faturamento do mes
-- Total de despesas
-- Lucro liquido (receitas - despesas)
-- Aliquota efetiva estimada
-
-**2. Checklist de Exportacao**
-- [ ] Receitas exportadas - Botao "Marcar como exportado"
-- [ ] Despesas exportadas - Botao "Marcar como exportado"
-- Historico: "Exportado em DD/MM/YYYY por Usuario"
-
-**3. Estatisticas do Cliente**
-- Grafico de evolucao mensal (ultimos 6 meses)
-- Comparativo com media dos clientes
-
-**4. Acoes Rapidas**
-- Botao "Exportar CSV" (abre o dialog existente)
-- Botao "Ver lancamentos" (link para receitas/despesas do cliente)
-
----
-
-## Calculo de Aliquota Efetiva
-
-Baseado na tabela progressiva mensal do IRPF 2024:
+### Novas Funcoes
 
 ```typescript
-const IRPF_TABLE = [
-  { limit: 2259.20, rate: 0, deduction: 0 },
-  { limit: 2826.65, rate: 0.075, deduction: 169.44 },
-  { limit: 3751.05, rate: 0.15, deduction: 381.44 },
-  { limit: 4664.68, rate: 0.225, deduction: 662.77 },
-  { limit: Infinity, rate: 0.275, deduction: 896.00 },
-];
+// Formata valor para Carne Leao (virgula como decimal)
+export function formatValueCarneLeao(value: number): string {
+  return value.toFixed(2).replace('.', ',');
+}
 
-function calculateEffectiveRate(monthlyIncome: number): number {
-  // Encontra a faixa
-  const bracket = IRPF_TABLE.find(b => monthlyIncome <= b.limit);
-  const tax = (monthlyIncome * bracket.rate) - bracket.deduction;
-  return tax > 0 ? (tax / monthlyIncome) * 100 : 0;
+// Gera CSV com ponto e virgula (sem cabecalho)
+export function generateCsvCarneLeao<T>(
+  data: T[], 
+  columns: CsvColumnCarneLeao<T>[]
+): string {
+  const BOM = '\uFEFF';
+  const rows = data.map(item => 
+    columns.map(col => col.render(item) || '').join(';')
+  );
+  return BOM + rows.join('\n');
 }
 ```
+
+---
+
+## Alteracoes no useClientExport.ts
+
+### Novos Dados Necessarios
+
+O hook precisa retornar dados adicionais do cliente:
+
+```typescript
+export interface ClientExportData {
+  charges: ChargeExportData[];
+  expenses: ExpenseExportData[];
+  client: {
+    cpf: string;
+    crpNumber: string | null;
+  };
+}
+```
+
+A query de charges permanece igual.
+A query de expenses deve usar `deductible_amount` (valor ja calculado).
+
+---
+
+## Nova Interface de Exportacao
+
+### Dialog Atualizado
+
+O dialog de exportacao tera opcao de formato:
+
+```text
++--------------------------------------------------+
+|        Exportar Dados para Carne Leao            |
++--------------------------------------------------+
+|                                                  |
+|  Cliente: Maria Silva (CPF: 123.456.789-01)      |
+|  CRP: CRP06/123456                               |
+|                                                  |
+|  Periodo: [Janeiro v] [2026 v]                   |
+|                                                  |
+|  Formato de exportacao:                          |
+|  ( ) Formato interno (controle do escritorio)    |
+|  (x) Formato Carne Leao (importacao RF)          |
+|                                                  |
+|  O que exportar?                                 |
+|  [x] Rendimentos (Receita Saude) - 32 registros  |
+|  [x] Despesas Dedutiveis (P10) - 8 registros     |
+|                                                  |
+|  [ Cancelar ]              [ Exportar CSV ]      |
++--------------------------------------------------+
+```
+
+---
+
+## Validacoes a Implementar
+
+### Antes da Exportacao
+
+1. **CPF do cliente** - Deve ter 11 digitos validos
+2. **CPF do paciente/pagador** - Todos devem ser validos
+3. **Limite de linhas** - Maximo 1000 por arquivo
+4. **Ano-calendario** - Datas devem ser do periodo selecionado
+
+### Mensagens de Erro
+
+- "CPF invalido encontrado. Verifique os cadastros antes de exportar."
+- "Limite de 1000 linhas excedido. Exporte em periodos menores."
+
+---
+
+## Arquivos a Modificar
+
+| Arquivo | Alteracoes |
+|---------|------------|
+| `src/lib/csv-utils.ts` | Adicionar funcoes para formato Carne Leao |
+| `src/hooks/contador/useClientExport.ts` | Incluir dados do cliente (CPF, CRP) |
+| `src/components/clientes/ExportClientDataDialog.tsx` | Adicionar opcao de formato e validacoes |
+| `src/types/database.ts` | Adicionar `crp_number` ao tipo Client |
 
 ---
 
@@ -138,171 +191,170 @@ function calculateEffectiveRate(monthlyIncome: number): number {
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/pages/contador/Gestao.tsx` | Pagina principal do modulo |
-| `src/hooks/contador/useClientMonthlyStats.ts` | Hook para buscar estatisticas |
-| `src/hooks/contador/useClientMonthlyStatus.ts` | Hook para status de exportacao |
-| `src/components/gestao/ClientStatsTable.tsx` | Tabela de ranking de clientes |
-| `src/components/gestao/ClientDetailPanel.tsx` | Painel lateral de detalhes |
-| `src/components/gestao/ExportChecklistCard.tsx` | Card de checklist de exportacao |
-| `src/components/gestao/GestaoKPIs.tsx` | Cards de KPIs |
-| `src/lib/irpf-utils.ts` | Funcoes de calculo de aliquota |
+| `src/lib/carne-leao-export.ts` | Geradores de linhas para cada layout oficial |
+| `src/lib/cpf-validator.ts` | Validacao completa de CPF |
 
 ---
 
-## Arquivos a Modificar
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/components/contador/ContadorSidebar.tsx` | Adicionar link "Gestao" como primeiro item |
-| `src/App.tsx` | Adicionar rota /contador/gestao |
-
----
-
-## Migracoes de Banco de Dados
-
-### 1. Tabela client_monthly_status
-
-```sql
--- Tabela para rastrear status de exportacao por cliente/mes
-CREATE TABLE public.client_monthly_status (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id uuid REFERENCES clients(id) ON DELETE CASCADE NOT NULL,
-  year integer NOT NULL,
-  month integer NOT NULL CHECK (month >= 1 AND month <= 12),
-  charges_exported_at timestamp with time zone,
-  charges_exported_by uuid,
-  expenses_exported_at timestamp with time zone,
-  expenses_exported_by uuid,
-  notes text,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  UNIQUE(client_id, year, month)
-);
-
--- RLS
-ALTER TABLE public.client_monthly_status ENABLE ROW LEVEL SECURITY;
-
--- Apenas admins podem gerenciar
-CREATE POLICY "Admins can manage client monthly status"
-  ON public.client_monthly_status FOR ALL
-  USING (
-    client_in_user_org(client_id, auth.uid()) 
-    AND has_role(auth.uid(), 'admin')
-  );
-
--- Trigger para updated_at
-CREATE TRIGGER update_client_monthly_status_updated_at
-  BEFORE UPDATE ON public.client_monthly_status
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-```
-
----
-
-## Queries Principais
-
-### Estatisticas Agregadas por Cliente
+## Funcao de Geracao: Rendimentos
 
 ```typescript
-// Busca receitas e despesas agregadas por cliente para um mes
-const { data } = await supabase
-  .from('clients')
-  .select(`
-    id,
-    name,
-    code,
-    charges(amount, status, payment_date),
-    expenses(amount, deductible_amount, payment_date)
-  `)
-  .eq('status', 'active');
+// src/lib/carne-leao-export.ts
 
-// Processa no frontend para calcular:
-// - Soma de charges com status=paid e payment_date no mes
-// - Soma de expenses com payment_date no mes
-// - Calculo de aliquota
+interface RendimentoData {
+  dataRecebimento: string;
+  valor: number;
+  historico: string;
+  cpfPagador: string;
+  cpfBeneficiario: string;
+  cpfProfissional: string;
+  registroProfissional: string | null;
+}
+
+export function gerarLinhaRendimento(data: RendimentoData): string {
+  const campos = [
+    formatDateBR(data.dataRecebimento),      // 1
+    'R01.001.001',                            // 2
+    '255',                                    // 3
+    formatValueCarneLeao(data.valor),         // 4
+    '',                                       // 5
+    data.historico,                           // 6
+    'PF',                                     // 7
+    cleanCpf(data.cpfPagador),                // 8
+    cleanCpf(data.cpfBeneficiario),           // 9
+    '',                                       // 10
+    '',                                       // 11
+    '',                                       // 12
+    '',                                       // 13
+    'S',                                      // 14
+    cleanCpf(data.cpfProfissional),           // 15
+    data.registroProfissional || ''           // 16
+  ];
+  return campos.join(';');
+}
 ```
 
-### Status de Exportacao
+---
+
+## Funcao de Geracao: Pagamentos
 
 ```typescript
-// Busca status de exportacao para o mes
-const { data: exportStatus } = await supabase
-  .from('client_monthly_status')
-  .select('*')
-  .eq('year', selectedYear)
-  .eq('month', selectedMonth);
+interface PagamentoData {
+  dataPagamento: string;
+  codigoDespesa: string;
+  valor: number;
+  historico: string | null;
+}
+
+export function gerarLinhaPagamento(data: PagamentoData): string {
+  const campos = [
+    formatDateBR(data.dataPagamento),
+    data.codigoDespesa,
+    formatValueCarneLeao(data.valor),
+    data.historico || ''
+  ];
+  return campos.join(';');
+}
 ```
 
 ---
 
-## Fluxo de Marcacao de Exportacao
+## Fluxo de Exportacao Carne Leao
 
 ```text
-1. Contador clica em "Marcar como exportado" na linha do cliente
+1. Usuario seleciona cliente e periodo
      |
      v
-2. Dialog de confirmacao: "Confirma que as [receitas/despesas] de [Cliente] 
-   foram importadas no Carne Leao?"
+2. Sistema busca charges (status=paid) e expenses do periodo
      |
      v
-3. Sistema faz upsert em client_monthly_status:
-   - charges_exported_at = now()
-   - charges_exported_by = auth.uid()
+3. Sistema busca dados do cliente (CPF, CRP)
      |
      v
-4. Badge muda de "Pendente" para "Exportado" com tooltip mostrando data/usuario
+4. Validacao: CPFs validos? Limite de linhas?
+     |
+     +--> Erro: Exibe mensagem e bloqueia exportacao
+     |
+     v
+5. Gera arquivo de Rendimentos (se selecionado)
+   - Nome: rendimentos_[codigo]_[mesano].csv
+   - Layout: 16 campos, separador ;
+     |
+     v
+6. Gera arquivo de Pagamentos (se selecionado)
+   - Nome: pagamentos_[codigo]_[mesano].csv
+   - Layout: 4 campos, separador ;
+     |
+     v
+7. Download dos arquivos + toast de sucesso
 ```
 
 ---
 
-## Mockup Visual
+## Nomenclatura dos Arquivos
 
-```text
-+------------------------------------------------------------------+
-| Gestao Mensal                               [Janeiro 2025 v]      |
-+------------------------------------------------------------------+
-|                                                                   |
-| +------------+ +------------+ +------------+ +------------+       |
-| | 45         | | R$ 127.500 | | 892        | | 38/45      |       |
-| | Clientes   | | Faturamento| | Lancamentos| | Exportados |       |
-| +------------+ +------------+ +------------+ +------------+       |
-|                                                                   |
-| +---------------------------------------------------------------+ |
-| | Cliente      | Faturamento | Rec | Desp | Aliq. | Status Exp. | |
-| |--------------|-------------|-----|------|-------|-------------| |
-| | Maria Silva  | R$ 8.500    | 32  | 5    | 15,2% | [R] [D]     | |
-| | Joao Santos  | R$ 6.200    | 24  | 8    | 12,1% | [R] [ ]     | |
-| | Ana Costa    | R$ 4.100    | 18  | 3    |  7,5% | [ ] [ ]     | |
-| | ...          |             |     |      |       |             | |
-| +---------------------------------------------------------------+ |
-|                                                                   |
-| Legenda: [R] = Receitas exportadas  [D] = Despesas exportadas     |
-+------------------------------------------------------------------+
-```
+| Tipo | Formato Interno | Formato Carne Leao |
+|------|-----------------|-------------------|
+| Receitas | `receitas_ABC_janeiro_2026.csv` | `rendimentos_ABC_202601.csv` |
+| Despesas | `despesas_ABC_janeiro_2026.csv` | `pagamentos_ABC_202601.csv` |
 
 ---
 
-## Consideracoes de Performance
+## Codigos P10 - Verificacao
 
-1. **Agregacao no Backend**: Para evitar N+1 queries, considerar criar uma VIEW ou funcao no PostgreSQL que retorne dados ja agregados
-2. **Cache**: Usar staleTime adequado no TanStack Query (dados mudam apenas quando ha novos lancamentos)
-3. **Paginacao**: Implementar se numero de clientes for grande (>50)
+Os codigos ja cadastrados no sistema:
+
+| Codigo | Nome | Status |
+|--------|------|--------|
+| P10.01.00001 | Agua | OK |
+| P10.01.00002 | Aluguel | OK |
+| P10.01.00003 | Condominio | OK |
+| P10.01.00004 | CRP - Conselho de classe | OK |
+| P10.01.00007 | Energia | OK |
+| P10.01.00008 | Gas | OK |
+| P10.01.00009 | IPTU | OK |
+| P10.01.00010 | ISS | OK |
+| P10.01.00011 | Material de limpeza | OK |
+| P10.01.00012 | Material de escritorio | OK |
+| P10.01.00013 | Remuneracao paga a terceiros | OK |
+| P10.01.00014 | Telefone/celular do consultorio | OK |
+
+Todos os codigos estao alinhados com o manual.
+
+---
+
+## Despesas Residenciais - Calculo Importante
+
+O manual nao menciona, mas no sistema atual temos um calculo:
+- Despesas residenciais: `deductible_amount` = 20% do `amount`
+- Despesas nao-residenciais: `deductible_amount` = 100% do `amount`
+
+Para exportacao no Carne Leao, usamos sempre `deductible_amount`.
 
 ---
 
 ## Testes Recomendados
 
-1. Verificar calculo de aliquota para diferentes faixas de renda
-2. Testar marcacao de exportacao e persistencia
-3. Verificar filtro por periodo (mes/ano)
-4. Testar ranking e ordenacao por diferentes colunas
-5. Verificar que apenas admins podem acessar/modificar
+1. Exportar rendimentos e verificar todos os 16 campos
+2. Exportar pagamentos e verificar formato
+3. Testar CPF invalido (deve bloquear exportacao)
+4. Testar com mais de 1000 lancamentos (deve alertar)
+5. Importar arquivo gerado no Carne Leao Web (ambiente real)
+6. Verificar que caracteres especiais nao quebram o CSV
 
 ---
 
-## Proximas Evolucoes (Fase 2)
+## Consideracoes Finais
 
-- Exportacao em lote (varios clientes de uma vez)
-- Alertas automaticos por email para clientes sem lancamentos
-- Integracao com layouts oficiais do Carne Leao
-- Dashboard de evolucao anual
+### Campos que Dependem do Cadastro
+
+Para a exportacao funcionar corretamente:
+- Cliente deve ter CPF preenchido
+- Cliente pode ter CRP preenchido (opcional mas recomendado)
+- Cada charge deve ter `patient_cpf` e `payer_cpf` preenchidos
+
+### Integração com Módulo Gestão
+
+O módulo de Gestão Mensal já implementado será o ponto de entrada principal para exportação. A funcionalidade poderá ser acessada:
+1. Pelo painel de detalhes do cliente (botão "Exportar CSV")
+2. Pelo menu de ações na lista de clientes
