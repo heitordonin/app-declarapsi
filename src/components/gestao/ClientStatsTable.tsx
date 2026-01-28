@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -10,6 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Tooltip,
   TooltipContent,
@@ -29,6 +30,8 @@ interface ClientStatsTableProps {
   onViewDetails: (clientId: string) => void;
   isLoading?: boolean;
   isMarking?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (selectedIds: Set<string>) => void;
 }
 
 type SortKey = 'name' | 'revenue' | 'charges' | 'expenses' | 'rate';
@@ -41,6 +44,8 @@ export function ClientStatsTable({
   onViewDetails,
   isLoading,
   isMarking,
+  selectedIds = new Set(),
+  onSelectionChange,
 }: ClientStatsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('revenue');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -60,6 +65,31 @@ export function ClientStatsTable({
     client.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.clientCode.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Seleção de clientes
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (!onSelectionChange) return;
+    if (checked) {
+      const allIds = new Set(filteredStats.map(c => c.clientId));
+      onSelectionChange(allIds);
+    } else {
+      onSelectionChange(new Set());
+    }
+  }, [filteredStats, onSelectionChange]);
+
+  const handleSelectOne = useCallback((clientId: string, checked: boolean) => {
+    if (!onSelectionChange) return;
+    const newSet = new Set(selectedIds);
+    if (checked) {
+      newSet.add(clientId);
+    } else {
+      newSet.delete(clientId);
+    }
+    onSelectionChange(newSet);
+  }, [selectedIds, onSelectionChange]);
+
+  const allSelected = filteredStats.length > 0 && filteredStats.every(c => selectedIds.has(c.clientId));
+  const someSelected = filteredStats.some(c => selectedIds.has(c.clientId)) && !allSelected;
 
   const sortedStats = [...filteredStats].sort((a, b) => {
     let aVal: number | string = 0;
@@ -171,10 +201,24 @@ export function ClientStatsTable({
           Nenhum cliente encontrado para "{searchTerm}".
         </div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="border rounded-lg overflow-x-auto">
           <Table>
         <TableHeader>
           <TableRow>
+            {onSelectionChange && (
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) {
+                      (el as HTMLButtonElement & { indeterminate: boolean }).indeterminate = someSelected;
+                    }
+                  }}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
+            )}
             <TableHead><SortableHeader label="Cliente" sortKeyName="name" /></TableHead>
             <TableHead><SortableHeader label="Faturamento" sortKeyName="revenue" /></TableHead>
             <TableHead className="text-center"><SortableHeader label="Rec" sortKeyName="charges" /></TableHead>
@@ -189,9 +233,19 @@ export function ClientStatsTable({
             const status = statusMap[client.clientId];
             const chargesExported = !!status?.charges_exported_at;
             const expensesExported = !!status?.expenses_exported_at;
+            const isSelected = selectedIds.has(client.clientId);
 
             return (
-              <TableRow key={client.clientId}>
+              <TableRow key={client.clientId} data-selected={isSelected}>
+                {onSelectionChange && (
+                  <TableCell className="w-10">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleSelectOne(client.clientId, !!checked)}
+                      aria-label={`Selecionar ${client.clientName}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <div>
                     <p className="font-medium">{client.clientName}</p>
@@ -219,7 +273,7 @@ export function ClientStatsTable({
                         >
                           <Badge
                             variant={chargesExported ? 'default' : 'outline'}
-                            className={`cursor-pointer ${chargesExported ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                            className={`cursor-pointer ${chargesExported ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
                           >
                             R {chargesExported ? <Check className="h-3 w-3 ml-1" /> : <X className="h-3 w-3 ml-1" />}
                           </Badge>
@@ -243,7 +297,7 @@ export function ClientStatsTable({
                         >
                           <Badge
                             variant={expensesExported ? 'default' : 'outline'}
-                            className={`cursor-pointer ${expensesExported ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                            className={`cursor-pointer ${expensesExported ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
                           >
                             D {expensesExported ? <Check className="h-3 w-3 ml-1" /> : <X className="h-3 w-3 ml-1" />}
                           </Badge>
