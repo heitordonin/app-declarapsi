@@ -43,11 +43,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Archive, ArchiveRestore, Edit } from "lucide-react";
+import { MoreVertical, Archive, ArchiveRestore, Edit, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Client } from "@/types/database";
 import { AddClientDialog } from "./AddClientDialog";
 import { EditClientDialog } from "./EditClientDialog";
+import { ExportClientDataDialog } from "./ExportClientDataDialog";
 
 export function ClientesList() {
   const [globalFilter, setGlobalFilter] = useState("");
@@ -55,6 +56,7 @@ export function ClientesList() {
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [clientToArchive, setClientToArchive] = useState<Client | null>(null);
   const [clientToUnarchive, setClientToUnarchive] = useState<Client | null>(null);
+  const [clientToExport, setClientToExport] = useState<Client | null>(null);
   const queryClient = useQueryClient();
 
   const { data: clients = [], isLoading } = useQuery({
@@ -187,6 +189,10 @@ export function ClientesList() {
               <DropdownMenuItem onClick={() => setClientToEdit(client)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setClientToExport(client)}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar dados
               </DropdownMenuItem>
               {client.status === "active" ? (
                 <DropdownMenuItem
@@ -337,6 +343,14 @@ export function ClientesList() {
 
       {clientToEdit && (
         <EditClientDialog client={clientToEdit} onClose={() => setClientToEdit(null)} />
+      )}
+
+      {clientToExport && (
+        <ExportClientDataDialog
+          client={clientToExport}
+          open={!!clientToExport}
+          onOpenChange={(open) => !open && setClientToExport(null)}
+        />
       )}
 
       <AlertDialog open={!!clientToArchive} onOpenChange={() => setClientToArchive(null)}>
