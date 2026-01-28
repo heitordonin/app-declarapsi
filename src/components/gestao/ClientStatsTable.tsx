@@ -9,12 +9,13 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Check, X, Eye, ArrowUpDown } from 'lucide-react';
+import { Check, X, Eye, ArrowUpDown, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ClientMonthlyStats } from '@/hooks/contador/useClientMonthlyStats';
 import type { ClientMonthlyStatus } from '@/hooks/contador/useClientMonthlyStatus';
@@ -43,6 +44,7 @@ export function ClientStatsTable({
 }: ClientStatsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('revenue');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -53,7 +55,13 @@ export function ClientStatsTable({
     }
   };
 
-  const sortedStats = [...stats].sort((a, b) => {
+  // Filtrar por termo de busca
+  const filteredStats = stats.filter((client) =>
+    client.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.clientCode.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const sortedStats = [...filteredStats].sort((a, b) => {
     let aVal: number | string = 0;
     let bVal: number | string = 0;
 
@@ -100,33 +108,39 @@ export function ClientStatsTable({
 
   if (isLoading) {
     return (
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Faturamento</TableHead>
-              <TableHead>Rec</TableHead>
-              <TableHead>Desp</TableHead>
-              <TableHead>Alíq.</TableHead>
-              <TableHead>Status Exp.</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <TableRow key={i}>
-                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-12" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+      <div className="space-y-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar cliente..." className="pl-10" disabled />
+        </div>
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Faturamento</TableHead>
+                <TableHead>Rec</TableHead>
+                <TableHead>Desp</TableHead>
+                <TableHead>Alíq.</TableHead>
+                <TableHead>Status Exp.</TableHead>
+                <TableHead></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-8" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-8" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     );
   }
@@ -140,8 +154,25 @@ export function ClientStatsTable({
   }
 
   return (
-    <div className="border rounded-lg">
-      <Table>
+    <div className="space-y-4">
+      {/* Campo de busca */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome ou código..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {filteredStats.length === 0 ? (
+        <div className="border rounded-lg p-8 text-center text-muted-foreground">
+          Nenhum cliente encontrado para "{searchTerm}".
+        </div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
         <TableHeader>
           <TableRow>
             <TableHead><SortableHeader label="Cliente" sortKeyName="name" /></TableHead>
@@ -238,8 +269,10 @@ export function ClientStatsTable({
               </TableRow>
             );
           })}
-        </TableBody>
-      </Table>
+          </TableBody>
+        </Table>
+      </div>
+      )}
     </div>
   );
 }
