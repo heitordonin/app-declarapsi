@@ -34,7 +34,6 @@ import {
 import {
   gerarArquivoRendimentos,
   gerarArquivoPagamentos,
-  gerarNomeArquivoCarneLeao,
   validarLimiteLinhas,
   RendimentoData,
   PagamentoData,
@@ -142,6 +141,17 @@ export function ExportClientDataDialog({ client, clientId, clientName, open, onO
     );
   }, [data, exportCharges, exportExpenses]);
 
+  // Gera nome do arquivo no formato: nome_tipo_mm-aaaa.csv
+  const gerarNomeArquivo = (nome: string, tipo: string, mes: number, ano: number): string => {
+    const nomeLimpo = nome
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^a-zA-Z0-9\s]/g, '') // Remove caracteres especiais
+      .trim();
+    const mesFormatado = mes.toString().padStart(2, '0');
+    return `${nomeLimpo}_${tipo}_${mesFormatado}-${ano}.csv`;
+  };
+
   const handleExportInterno = async () => {
     const result = await refetch();
     const exportData = result.data;
@@ -150,15 +160,16 @@ export function ExportClientDataDialog({ client, clientId, clientName, open, onO
       throw new Error("Não foi possível carregar os dados");
     }
 
-    const clientCode = exportData.client.code || "cliente";
-    const periodLabel = `${selectedMonthLabel.toLowerCase()}_${year}`;
-
     let filesExported = 0;
+
+    // Determinar tipo para nome do arquivo
+    const exportarAmbos = exportCharges && exportExpenses;
 
     // Exportar receitas formato interno
     if (exportCharges) {
       const csvContent = generateCsv(exportData.charges, chargeColumnsInterno);
-      const filename = `receitas_${clientCode}_${periodLabel}.csv`;
+      const tipo = exportarAmbos ? "receitas" : "receitas";
+      const filename = gerarNomeArquivo(resolvedClientName, tipo, month, year);
       downloadCsv(csvContent, filename);
       filesExported++;
     }
@@ -166,7 +177,8 @@ export function ExportClientDataDialog({ client, clientId, clientName, open, onO
     // Exportar despesas formato interno
     if (exportExpenses) {
       const csvContent = generateCsv(exportData.expenses, expenseColumnsInterno);
-      const filename = `despesas_${clientCode}_${periodLabel}.csv`;
+      const tipo = exportarAmbos ? "despesas" : "despesas";
+      const filename = gerarNomeArquivo(resolvedClientName, tipo, month, year);
       downloadCsv(csvContent, filename);
       filesExported++;
     }
@@ -186,8 +198,6 @@ export function ExportClientDataDialog({ client, clientId, clientName, open, onO
       throw new Error("Não foi possível carregar os dados");
     }
 
-    const clientCode = exportData.client.code || "cliente";
-
     let filesExported = 0;
 
     // Exportar rendimentos (Receita Saúde)
@@ -203,7 +213,7 @@ export function ExportClientDataDialog({ client, clientId, clientName, open, onO
       }));
 
       const csvContent = gerarArquivoRendimentos(rendimentos);
-      const filename = gerarNomeArquivoCarneLeao('rendimentos', clientCode, year, month);
+      const filename = gerarNomeArquivo(resolvedClientName, "receita saude", month, year);
       downloadCsv(csvContent, filename);
       filesExported++;
     }
@@ -218,7 +228,7 @@ export function ExportClientDataDialog({ client, clientId, clientName, open, onO
       }));
 
       const csvContent = gerarArquivoPagamentos(pagamentos);
-      const filename = gerarNomeArquivoCarneLeao('pagamentos', clientCode, year, month);
+      const filename = gerarNomeArquivo(resolvedClientName, "despesas", month, year);
       downloadCsv(csvContent, filename);
       filesExported++;
     }
