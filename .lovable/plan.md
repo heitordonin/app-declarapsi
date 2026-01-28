@@ -1,217 +1,176 @@
 
-# Plano de Melhorias de Acessibilidade/Mobile
+# Plano de Reorganizacao do Sidebar do Contador em Modulos
 
 ## Resumo Executivo
 
-Este plano corrige 3 problemas de acessibilidade e usabilidade mobile identificados: estabilidade de formularios em Drawers com teclado virtual, z-index de DatePicker dentro de Drawers, e padronizacao de touch targets para botoes.
+Reorganizar a navegacao do sidebar do contador em 3 modulos tematicos, seguindo o mesmo padrao ja implementado no `ClienteSidebar`, para simplificar a navegacao e agrupar funcionalidades relacionadas.
 
 ---
 
-## Problema 9: Formularios em Drawer - Falta repositionInputs={false}
+## Estrutura Proposta
 
-### Analise
+### Modulo 1: Obrigacoes
+Agrupa todas as funcionalidades relacionadas ao controle de obrigacoes fiscais.
 
-A propriedade `repositionInputs={false}` desativa o reposicionamento automatico do Vaul quando o teclado virtual abre, evitando comportamentos indesejaveis como inputs desaparecendo ou Drawers saltando.
+| Item | Icone | Rota |
+|------|-------|------|
+| Calendario | CalendarDays | /contador/obrigacoes |
+| Relatorios | PieChart | /contador/relatorios |
+| Conferencia | FileText | /contador/conferencia |
+| Protocolos | BarChart | /contador/protocolos |
 
-| Arquivo | shouldScaleBackground | repositionInputs | Status |
-|---------|----------------------|------------------|--------|
-| ResponsiveActionPanel.tsx | implícito (default) | `false` | OK |
-| StandardDescriptionsDialog.tsx | `false` | `false` | OK |
-| MarkPaymentAsPaidDialog.tsx | `false` | **FALTA** | CORRIGIR |
-| ChargeFilters.tsx | **FALTA** | **FALTA** | CORRIGIR |
-| ExpenseFilters.tsx | **FALTA** | **FALTA** | CORRIGIR |
+### Modulo 2: Relacionamento
+Agrupa funcionalidades de comunicacao e documentos com clientes.
 
-### Solucao
+| Item | Icone | Rota |
+|------|-------|------|
+| Documentos | FolderOpen | /contador/documentos |
+| Comunicados | Mail | /contador/comunicados |
 
-Adicionar `repositionInputs={false}` em todos os Drawers que contem inputs.
+### Modulo 3: Configuracoes
+Agrupa itens administrativos e de gestao.
 
-### Codigo - MarkPaymentAsPaidDialog.tsx (linha 149)
-
-```typescript
-// ANTES
-<Drawer 
-  open={open} 
-  onOpenChange={onOpenChange}
-  shouldScaleBackground={false}
->
-
-// DEPOIS
-<Drawer 
-  open={open} 
-  onOpenChange={onOpenChange}
-  shouldScaleBackground={false}
-  repositionInputs={false}
->
-```
-
-### Codigo - ChargeFilters.tsx (linha 226)
-
-```typescript
-// ANTES
-<Drawer open={open} onOpenChange={onOpenChange}>
-
-// DEPOIS
-<Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
-```
-
-### Codigo - ExpenseFilters.tsx (linha 263)
-
-```typescript
-// ANTES
-<Drawer open={open} onOpenChange={onOpenChange}>
-
-// DEPOIS
-<Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
-```
+| Item | Icone | Rota |
+|------|-------|------|
+| Configuracoes | Settings | /contador/configuracoes |
+| E-mails | MailCheck | /contador/emails |
+| Clientes | Users | /contador/clientes |
 
 ---
 
-## Problema 10: DatePicker z-index dentro de Drawer
+## Implementacao
 
-### Analise
+### Alteracoes no ContadorSidebar.tsx
 
-Atualmente:
-- `DrawerContent` usa `z-50`
-- `PopoverContent` (usado pelo DatePicker) tambem usa `z-50`
-
-Quando um DatePicker e aberto dentro de um Drawer, ambos tem o mesmo z-index, o que pode fazer o calendario ficar atras do Drawer em alguns navegadores/dispositivos.
-
-### Solucao
-
-Aumentar o z-index do PopoverContent para `z-[60]` para garantir que apareca acima dos Drawers.
-
-### Codigo - popover.tsx (linhas 19-20)
+Substituir a lista plana `navItems` por uma estrutura de modulos similar ao `ClienteSidebar`:
 
 ```typescript
-// ANTES
-className={cn(
-  "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none...",
-  className,
-)}
+import { ClipboardList, Handshake, Cog } from 'lucide-react';
 
-// DEPOIS
-className={cn(
-  "z-[60] w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none...",
-  className,
-)}
+const sidebarModules = [
+  {
+    id: 'obrigacoes',
+    title: 'Obrigações',
+    icon: ClipboardList,
+    items: [
+      { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
+      { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
+      { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+      { icon: BarChart, label: 'Protocolos', path: '/contador/protocolos' },
+    ]
+  },
+  {
+    id: 'relacionamento',
+    title: 'Relacionamento',
+    icon: Handshake,
+    items: [
+      { icon: FolderOpen, label: 'Documentos', path: '/contador/documentos' },
+      { icon: Mail, label: 'Comunicados', path: '/contador/comunicados' },
+    ]
+  },
+  {
+    id: 'configuracoes',
+    title: 'Configurações',
+    icon: Cog,
+    items: [
+      { icon: Settings, label: 'Configurações', path: '/contador/configuracoes' },
+      { icon: MailCheck, label: 'E-mails', path: '/contador/emails' },
+      { icon: Users, label: 'Clientes', path: '/contador/clientes' },
+    ]
+  },
+];
 ```
 
-### Impacto
+### Estrutura do Render
 
-Esta alteracao afeta todos os Popovers do sistema, garantindo que:
-- DatePickers funcionem dentro de Drawers
-- Menus dropdown funcionem dentro de Sheets
-- Qualquer Popover tenha prioridade visual sobre modais
-
----
-
-## Problema 11: Botoes touch-friendly inconsistentes
-
-### Analise
-
-A regra mobile-first define touch targets minimos de 44x44px. Verificando o codigo:
-
-| Componente | Altura Atual | Status |
-|------------|--------------|--------|
-| PaymentCard.tsx (Baixar/Confirmar) | `h-11` (44px) | OK |
-| MarkPaymentAsPaidDialog.tsx (footer) | `h-11` (44px) | OK |
-| ChargeFilters.tsx (Aplicar/Limpar) | default (40px) | CORRIGIR |
-| ExpenseFilters.tsx (Aplicar/Limpar) | default (40px) | CORRIGIR |
-| StandardDescriptionsDialog.tsx (icones) | `h-8 w-8` (32px) | CORRIGIR |
-
-### Solucao
-
-Padronizar botoes de acao primaria em contexto mobile para `h-11` (44px).
-
-### Codigo - ChargeFilters.tsx (FilterActions)
+Atualizar o JSX para iterar sobre modulos:
 
 ```typescript
-// ANTES
-<Button variant="ghost" onClick={handleClear}>
-  Limpar
-</Button>
-<Button onClick={handleApply}>
-  Aplicar filtros
-</Button>
-
-// DEPOIS
-<Button variant="ghost" onClick={handleClear} className="h-11">
-  Limpar
-</Button>
-<Button onClick={handleApply} className="h-11">
-  Aplicar filtros
-</Button>
-```
-
-### Codigo - ExpenseFilters.tsx (FilterActions)
-
-```typescript
-// ANTES
-<Button variant="ghost" onClick={handleClear}>
-  Limpar
-</Button>
-<Button onClick={handleApply}>
-  Aplicar filtros
-</Button>
-
-// DEPOIS
-<Button variant="ghost" onClick={handleClear} className="h-11">
-  Limpar
-</Button>
-<Button onClick={handleApply} className="h-11">
-  Aplicar filtros
-</Button>
-```
-
-### Codigo - StandardDescriptionsDialog.tsx (icones de acao)
-
-Os botoes de editar/excluir nas linhas de descricao usam `h-8 w-8`. Em mobile, isso e muito pequeno para toque preciso. Aumentar para `h-10 w-10`:
-
-```typescript
-// ANTES
-<Button
-  size="icon"
-  variant="ghost"
-  className="h-8 w-8 shrink-0"
-  ...
->
-
-// DEPOIS
-<Button
-  size="icon"
-  variant="ghost"
-  className="h-10 w-10 shrink-0"
-  ...
->
+<SidebarContent>
+  {sidebarModules.map((module) => (
+    <SidebarGroup key={module.id}>
+      <SidebarGroupLabel>
+        <module.icon className="h-4 w-4 mr-2" />
+        {!isCollapsed && module.title}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {module.items.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname.startsWith(item.path);
+            return (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton asChild isActive={isActive}>
+                  <Link to={item.path} onClick={handleNavClick}>
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  ))}
+</SidebarContent>
 ```
 
 ---
 
-## Resumo de Alteracoes por Arquivo
+## Icones Sugeridos para Modulos
+
+| Modulo | Icone Lucide | Justificativa |
+|--------|--------------|---------------|
+| Obrigacoes | ClipboardList | Lista de tarefas/obrigacoes |
+| Relacionamento | Handshake | Interacao com clientes |
+| Configuracoes | Cog | Configuracoes do sistema |
+
+---
+
+## Arquivo a Modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/ui/popover.tsx` | Aumentar z-index para z-[60] |
-| `src/components/cliente/pagamentos/MarkPaymentAsPaidDialog.tsx` | Adicionar repositionInputs={false} |
-| `src/components/cliente/receitas/ChargeFilters.tsx` | Adicionar repositionInputs={false}, h-11 nos botoes |
-| `src/components/cliente/despesas/ExpenseFilters.tsx` | Adicionar repositionInputs={false}, h-11 nos botoes |
-| `src/components/cliente/receitas/StandardDescriptionsDialog.tsx` | Aumentar botoes de acao para h-10 w-10 |
+| `src/components/contador/ContadorSidebar.tsx` | Refatorar para usar estrutura de modulos |
+
+---
+
+## Comparativo Visual
+
+```text
+ANTES (lista plana):          DEPOIS (modulos):
+-------------------------     -------------------------
+Area do Contador              Obrigacoes
+  Obrigacoes                    Calendario
+  Relatorios                    Relatorios
+  Conferencia                   Conferencia
+  Protocolos                    Protocolos
+  Documentos                  Relacionamento
+  E-mails                       Documentos
+  Configuracoes                 Comunicados
+  Comunicados                 Configuracoes
+  Clientes                      Configuracoes
+                                E-mails
+                                Clientes
+-------------------------     -------------------------
+```
 
 ---
 
 ## Testes Recomendados
 
-1. **Teste de teclado virtual**: Abrir MarkPaymentAsPaidDialog no mobile, focar no campo de data e verificar se o Drawer nao salta
-2. **Teste de DatePicker em Drawer**: Abrir filtros de despesas no mobile e selecionar data - calendario deve aparecer acima do Drawer
-3. **Teste de touch targets**: Verificar que botoes de acao sao facilmente tocaveis em dispositivos moveis
-4. **Teste de regressao**: Verificar que Popovers em outras partes do app continuam funcionando (menus dropdown, selects)
+1. Navegar entre todas as paginas do modulo contador
+2. Verificar destaque visual do item ativo em cada modulo
+3. Testar comportamento collapsed (sidebar recolhida)
+4. Testar em mobile - fechar sidebar ao clicar em item
+5. Verificar que icones dos modulos aparecem quando collapsed
 
 ---
 
 ## Impacto Esperado
 
-- Formularios em Drawers nao "pulam" quando teclado virtual abre
-- DatePickers sempre visiveis e clicaveis dentro de modais
-- Melhor usabilidade em dispositivos touch com alvos maiores
-- Reducao de toques acidentais e frustracoes do usuario
-
+- Navegacao mais intuitiva e organizada
+- Reducao da carga cognitiva ao encontrar funcionalidades
+- Consistencia visual entre areas de cliente e contador
+- Agrupamento logico facilita onboarding de novos usuarios
