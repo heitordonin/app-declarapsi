@@ -13,7 +13,8 @@ import {
   MailCheck,
   ClipboardList,
   Handshake,
-  Cog
+  Cog,
+  Send
 } from 'lucide-react';
 import {
   Sidebar,
@@ -41,6 +42,7 @@ const sidebarModules = [
       { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
       { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
       { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+      { icon: Send, label: 'Protocolos', path: '/contador/protocolos' },
     ]
   },
   {
