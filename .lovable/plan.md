@@ -1,50 +1,81 @@
 
+# Problema Identificado: Link para Protocolos Ausente no Menu
 
-# Bug: Vencimento aparece com -1 dia em /cliente/pagamentos
+## Diagnóstico
 
-## Causa Raiz
+A página `/contador/protocolos` existe e está corretamente registrada no roteamento (`App.tsx` linha 86), porém **não há link para ela no menu lateral** (`ContadorSidebar.tsx`).
 
-O campo `due_at` no banco de dados é do tipo `date` (sem horário), retornando strings como `"2025-03-15"`. Quando o JavaScript faz `new Date("2025-03-15")`, interpreta como **UTC meia-noite**. No fuso horário do Brasil (UTC-3), isso resulta em `14/03/2025 às 21:00`, ou seja, o **dia anterior**.
+O sidebar atual tem:
+- Conferência ✓
+- Protocolos ✗ (faltando)
 
-Esse é um bug clássico de timezone com datas puras.
+## Solução
 
-## Correção
+Adicionar o link para "Protocolos" no menu lateral, logo após "Conferência", dentro do módulo "Obrigações".
 
-Substituir `new Date(dateString)` por parsing seguro que ignora timezone. A solução mais simples é adicionar `T00:00:00` à string de data antes de criar o objeto Date, forçando interpretação como horário local.
+---
 
-### Arquivos afetados
+## Alteração Necessária
 
-**1. `src/hooks/cliente/usePaymentsData.ts`** (linha 50)
+### Arquivo: `src/components/contador/ContadorSidebar.tsx`
+
+**Localização:** Módulo "Obrigações" (linhas 36-45)
+
+**Antes:**
 ```typescript
-// De:
-const dueDate = new Date(doc.due_at);
-// Para:
-const dueDate = new Date(doc.due_at + 'T00:00:00');
+{
+  id: 'obrigacoes',
+  title: 'Obrigações',
+  icon: ClipboardList,
+  items: [
+    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
+    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
+    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
+    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+  ]
+}
 ```
 
-**2. `src/components/cliente/pagamentos/PaymentCard.tsx`** (linha 100)
+**Depois:**
 ```typescript
-// De:
-format(new Date(payment.dueDate), 'dd/MM/yyyy')
-// Para:
-format(new Date(payment.dueDate + 'T00:00:00'), 'dd/MM/yyyy')
+{
+  id: 'obrigacoes',
+  title: 'Obrigações',
+  icon: ClipboardList,
+  items: [
+    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
+    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
+    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
+    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+    { icon: Send, label: 'Protocolos', path: '/contador/protocolos' },
+  ]
+}
 ```
 
-**3. `src/pages/cliente/Pagamentos.tsx`** (linha ~80, filtro por mês)
-```typescript
-// De:
-format(new Date(payment.dueDate), 'yyyy-MM')
-// Para:
-format(new Date(payment.dueDate + 'T00:00:00'), 'yyyy-MM')
+### Ícone a Adicionar
+
+Importar o ícone `Send` do lucide-react (representa envio de documentos).
+
+---
+
+## Resumo das Alterações
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/contador/ContadorSidebar.tsx` | Adicionar import do ícone `Send` e novo item de menu "Protocolos" |
+
+---
+
+## Resultado Esperado
+
+Após a alteração, o menu lateral exibirá:
+
+```
+📊 Gestão
+📅 Calendário
+📈 Relatórios
+📄 Conferência
+✉️ Protocolos  ← NOVO
 ```
 
-## Resumo
-
-| Arquivo | Linha | Alteração |
-|---------|-------|-----------|
-| `usePaymentsData.ts` | 50 | Corrigir parsing de `due_at` |
-| `PaymentCard.tsx` | 100 | Corrigir exibição do vencimento |
-| `Pagamentos.tsx` | ~80 | Corrigir filtro por mês |
-
-Três linhas corrigidas, zero impacto em outras funcionalidades.
-
+Isso permitirá acesso direto à página de Protocolos que lista todos os documentos enviados aos clientes.

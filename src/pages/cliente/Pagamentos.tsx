@@ -65,7 +65,7 @@ export default function Pagamentos() {
       // Filter by month (using due date)
       if (selectedMonth) {
         const dueDateMonth = payment.dueDate
-          ? format(new Date(payment.dueDate), 'yyyy-MM')
+          ? format(new Date(payment.dueDate + 'T00:00:00'), 'yyyy-MM')
           : null;
         if (dueDateMonth !== selectedMonth) {
           return false;
