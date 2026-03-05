@@ -1,38 +1,81 @@
 
+# Problema Identificado: Link para Protocolos Ausente no Menu
 
-# Correção: Links Quebrados nos Emails de Notificação
+## Diagnóstico
 
-## Problema
+A página `/contador/protocolos` existe e está corretamente registrada no roteamento (`App.tsx` linha 86), porém **não há link para ela no menu lateral** (`ContadorSidebar.tsx`).
 
-Ambas as Edge Functions (`send-document-notification` e `send-due-reminders`) geram a URL do app assim:
-
-```javascript
-const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || '';
-```
-
-Isso produz uma URL incorreta (baseada no ID do projeto Supabase), enquanto a URL real publicada é `https://app-declarapsi.lovable.app`.
-
-Além disso, o link aponta diretamente para `/cliente/documentos`, mas o usuário precisa estar logado primeiro. A correção deve apontar para a página de login (`/auth`), que já redireciona automaticamente para a área do cliente após autenticação.
+O sidebar atual tem:
+- Conferência ✓
+- Protocolos ✗ (faltando)
 
 ## Solução
 
-1. Criar um secret `APP_URL` com o valor `https://app-declarapsi.lovable.app`
-2. Alterar ambas as funções para usar `Deno.env.get('APP_URL')` e apontar para `/auth` ao invés de `/cliente/documentos`
+Adicionar o link para "Protocolos" no menu lateral, logo após "Conferência", dentro do módulo "Obrigações".
 
-## Alterações
+---
 
-### Secret a criar
-- `APP_URL` = `https://app-declarapsi.lovable.app`
+## Alteração Necessária
 
-### Arquivo: `supabase/functions/send-document-notification/index.ts`
-- Linha 69-70: Substituir a lógica de URL por:
-  ```typescript
-  const appUrl = Deno.env.get('APP_URL') || 'https://app-declarapsi.lovable.app';
-  const clientAreaLink = `${appUrl}/auth`;
-  ```
-- Linha 95-97: Atualizar o texto do botão para "Acessar Declara Psi"
+### Arquivo: `src/components/contador/ContadorSidebar.tsx`
 
-### Arquivo: `supabase/functions/send-due-reminders/index.ts`
-- Linha 83-84: Mesma substituição de URL
-- Linha 112: Atualizar o texto do botão para "Acessar Declara Psi"
+**Localização:** Módulo "Obrigações" (linhas 36-45)
 
+**Antes:**
+```typescript
+{
+  id: 'obrigacoes',
+  title: 'Obrigações',
+  icon: ClipboardList,
+  items: [
+    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
+    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
+    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
+    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+  ]
+}
+```
+
+**Depois:**
+```typescript
+{
+  id: 'obrigacoes',
+  title: 'Obrigações',
+  icon: ClipboardList,
+  items: [
+    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
+    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
+    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
+    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+    { icon: Send, label: 'Protocolos', path: '/contador/protocolos' },
+  ]
+}
+```
+
+### Ícone a Adicionar
+
+Importar o ícone `Send` do lucide-react (representa envio de documentos).
+
+---
+
+## Resumo das Alterações
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/contador/ContadorSidebar.tsx` | Adicionar import do ícone `Send` e novo item de menu "Protocolos" |
+
+---
+
+## Resultado Esperado
+
+Após a alteração, o menu lateral exibirá:
+
+```
+📊 Gestão
+📅 Calendário
+📈 Relatórios
+📄 Conferência
+✉️ Protocolos  ← NOVO
+```
+
+Isso permitirá acesso direto à página de Protocolos que lista todos os documentos enviados aos clientes.

@@ -80,8 +80,8 @@ serve(async (req) => {
         const formattedAmount = amount ? parseFloat(amount).toFixed(2) : undefined;
 
         // URL da área do cliente
-        const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || '';
-        const clientAreaLink = `${appUrl}/cliente/documentos`;
+        const appUrl = Deno.env.get('APP_URL') || 'https://app-declarapsi.lovable.app';
+        const clientAreaLink = `${appUrl}/auth`;
 
         // Criar HTML do email
         const html = `
@@ -110,7 +110,7 @@ serve(async (req) => {
                   Não se esqueça de acessar sua área do cliente para baixar e processar este documento antes do vencimento.
                 </p>
                 <a href="${clientAreaLink}" style="display: inline-block; background-color: #dc3545; color: white; text-decoration: none; padding: 14px 30px; border-radius: 5px; margin: 20px 0;">
-                  Acessar Área do Cliente
+                  Acessar Declara Psi
                 </a>
                 <p style="color: #8898aa; font-size: 12px; margin-top: 30px;">
                   Declara Psi - Gestão de Obrigações
