@@ -66,8 +66,8 @@ serve(async (req) => {
     const formattedAmount = amount ? parseFloat(amount).toFixed(2) : undefined;
 
     // URL da área do cliente
-    const appUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || '';
-    const clientAreaLink = `${appUrl}/cliente/documentos`;
+    const appUrl = Deno.env.get('APP_URL') || 'https://app-declarapsi.lovable.app';
+    const clientAreaLink = `${appUrl}/auth`;
 
     // Criar HTML do email
     const html = `
