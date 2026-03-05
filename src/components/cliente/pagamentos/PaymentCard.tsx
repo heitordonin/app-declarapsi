@@ -97,7 +97,7 @@ export function PaymentCard({ payment, onDownload, onMarkAsPaid, onUnmarkAsPaid,
             <span className="text-sm text-muted-foreground">Vencimento:</span>
             <span className="text-foreground">
               {payment.dueDate 
-                ? format(new Date(payment.dueDate), 'dd/MM/yyyy')
+                ? format(new Date(payment.dueDate + 'T00:00:00'), 'dd/MM/yyyy')
                 : 'Sem vencimento'
               }
             </span>

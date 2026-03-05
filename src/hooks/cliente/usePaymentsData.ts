@@ -58,7 +58,7 @@ export function usePaymentsData(clientId?: string) {
       if (error) throw error;
 
       return (data || []).map((doc): Payment => {
-        const dueDate = new Date(doc.due_at);
+        const dueDate = new Date(doc.due_at + 'T00:00:00');
         
         return {
           id: doc.id,
