@@ -110,7 +110,7 @@ serve(async (req) => {
                   Não se esqueça de acessar sua área do cliente para baixar e processar este documento antes do vencimento.
                 </p>
                 <a href="${clientAreaLink}" style="display: inline-block; background-color: #dc3545; color: white; text-decoration: none; padding: 14px 30px; border-radius: 5px; margin: 20px 0;">
-                  Acessar Área do Cliente
+                  Acessar Declara Psi
                 </a>
                 <p style="color: #8898aa; font-size: 12px; margin-top: 30px;">
                   Declara Psi - Gestão de Obrigações

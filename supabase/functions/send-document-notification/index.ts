@@ -93,7 +93,7 @@ serve(async (req) => {
               ${formattedAmount ? `<p style="margin: 8px 0;"><strong>Valor:</strong> R$ ${formattedAmount}</p>` : ''}
             </div>
             <a href="${clientAreaLink}" style="display: inline-block; background-color: #5469d4; color: white; text-decoration: none; padding: 14px 30px; border-radius: 5px; margin: 20px 0;">
-              Acessar Área do Cliente
+              Acessar Declara Psi
             </a>
             <p style="color: #666; font-size: 14px; margin-top: 30px;">
               Declara Psi - Gestão de Obrigações
