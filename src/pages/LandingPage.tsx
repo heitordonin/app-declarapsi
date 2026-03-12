@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -13,47 +14,45 @@ import { useState } from 'react';
 
 const plans = [
   {
-    name: 'Essencial',
-    price: 97,
-    priceId: 'price_essencial_monthly',
-    description: 'Para quem está começando',
+    name: 'Básico',
+    yearlyPrice: 197,
+    monthlyPrice: 217,
+    priceIdYearly: 'price_basico_yearly',
+    priceIdMonthly: 'price_basico_monthly',
+    description: 'Para psicólogos autônomos',
     features: [
-      'Até 20 pacientes',
-      'Gestão financeira básica',
-      'Relatórios mensais',
-      'Emissão de recibos',
-      'Suporte por email',
+      'App completo',
+      'Emissão do Receita Saúde',
+      'Lançamento das despesas no Carnê Leão',
+      'Emissão e envio do DARF',
+      'Suporte por e-mail',
     ],
     highlighted: false,
   },
   {
-    name: 'Profissional',
-    price: 197,
-    priceId: 'price_profissional_monthly',
+    name: 'Completo',
+    yearlyPrice: 247,
+    monthlyPrice: 287,
+    priceIdYearly: 'price_completo_yearly',
+    priceIdMonthly: 'price_completo_monthly',
     description: 'O mais escolhido pelos psicólogos',
     features: [
-      'Até 80 pacientes',
-      'Carnê-leão automático',
-      'DARF gerado automaticamente',
-      'Relatórios avançados',
-      'Suporte prioritário',
-      'Lembretes de obrigações',
+      'Tudo do plano Básico',
+      'Emissão e envio da Guia da Previdência Social (INSS) mensal',
     ],
     highlighted: true,
   },
   {
-    name: 'Consultório',
-    price: 347,
-    priceId: 'price_consultorio_monthly',
-    description: 'Para clínicas e múltiplos profissionais',
+    name: 'Psi Regular',
+    yearlyPrice: 367,
+    monthlyPrice: null,
+    priceIdYearly: 'price_psi_regular_yearly',
+    priceIdMonthly: null,
+    description: 'Experiência completa e sem preocupações',
     features: [
-      'Pacientes ilimitados',
-      'Multi-profissional',
-      'API de integração',
-      'Relatórios personalizados',
-      'Suporte dedicado',
-      'Onboarding assistido',
-      'Dashboard administrativo',
+      'Tudo do plano Completo',
+      'Declaração de Ajuste Anual do IRPF do ano seguinte da assinatura',
+      'Atendimento via WhatsApp',
     ],
     highlighted: false,
   },
@@ -92,9 +91,10 @@ const faqs = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<'anual' | 'mensal'>('anual');
 
-  const handleSelectPlan = (priceId: string) => {
-    // Ready for Stripe: replace with checkout session creation
+  const handleSelectPlan = (priceId: string | null) => {
+    if (!priceId) return;
     navigate('/auth');
   };
 
@@ -247,56 +247,77 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Planos que cabem no seu bolso</h2>
-            <p className="text-muted-foreground text-lg">7 dias grátis em qualquer plano. Cancele quando quiser.</p>
+            <p className="text-muted-foreground text-lg mb-8">7 dias grátis em qualquer plano. Cancele quando quiser.</p>
+            <div className="flex items-center justify-center gap-3 mb-10">
+              <span className={`text-sm font-medium ${billingPeriod === 'mensal' ? 'text-foreground' : 'text-muted-foreground'}`}>Mensal</span>
+              <Switch checked={billingPeriod === 'anual'} onCheckedChange={(checked) => setBillingPeriod(checked ? 'anual' : 'mensal')} />
+              <span className={`text-sm font-medium ${billingPeriod === 'anual' ? 'text-foreground' : 'text-muted-foreground'}`}>Anual</span>
+              {billingPeriod === 'anual' && (
+                <Badge variant="secondary" className="text-xs">Economia</Badge>
+              )}
+            </div>
           </div>
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
-            {plans.map((plan) => (
-              <Card
-                key={plan.name}
-                className={`relative flex flex-col border-2 transition-all ${
-                  plan.highlighted
-                    ? 'border-[hsl(184,97%,49%)] shadow-xl scale-[1.02]'
-                    : 'border-border hover:border-primary/30 shadow-md'
-                }`}
-              >
-                {plan.highlighted && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] font-semibold px-4 py-1">
-                      <Star className="h-3.5 w-3.5 mr-1" /> Mais Popular
-                    </Badge>
-                  </div>
-                )}
-                <CardHeader className="text-center pb-2 pt-8">
-                  <CardTitle className="text-xl">{plan.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{plan.description}</p>
-                </CardHeader>
-                <CardContent className="flex flex-col flex-1 pt-4">
-                  <div className="text-center mb-6">
-                    <span className="text-4xl font-extrabold">R$ {plan.price}</span>
-                    <span className="text-muted-foreground">/mês</span>
-                  </div>
-                  <ul className="space-y-3 flex-1 mb-6">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm">
-                        <Check className="h-4 w-4 text-[hsl(184,97%,49%)] mt-0.5 shrink-0" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className={`w-full h-11 font-semibold ${
-                      plan.highlighted
-                        ? 'bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] hover:bg-[hsl(184,97%,42%)]'
-                        : ''
-                    }`}
-                    variant={plan.highlighted ? 'default' : 'outline'}
-                    onClick={() => handleSelectPlan(plan.priceId)}
-                  >
-                    Começar Agora
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            {plans.map((plan) => {
+              const price = billingPeriod === 'anual' ? plan.yearlyPrice : plan.monthlyPrice;
+              const priceId = billingPeriod === 'anual' ? plan.priceIdYearly : plan.priceIdMonthly;
+              const isUnavailable = price === null;
+
+              return (
+                <Card
+                  key={plan.name}
+                  className={`relative flex flex-col border-2 transition-all ${
+                    plan.highlighted
+                      ? 'border-[hsl(184,97%,49%)] shadow-xl scale-[1.02]'
+                      : 'border-border hover:border-primary/30 shadow-md'
+                  }`}
+                >
+                  {plan.highlighted && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] font-semibold px-4 py-1">
+                        <Star className="h-3.5 w-3.5 mr-1" /> Mais Popular
+                      </Badge>
+                    </div>
+                  )}
+                  <CardHeader className="text-center pb-2 pt-8">
+                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{plan.description}</p>
+                  </CardHeader>
+                  <CardContent className="flex flex-col flex-1 pt-4">
+                    <div className="text-center mb-6 h-12 flex items-center justify-center">
+                      {isUnavailable ? (
+                        <span className="text-lg font-semibold text-muted-foreground">Indisponível no plano mensal</span>
+                      ) : (
+                        <>
+                          <span className="text-4xl font-extrabold">R$ {price}</span>
+                          <span className="text-muted-foreground">/mês</span>
+                        </>
+                      )}
+                    </div>
+                    <ul className="space-y-3 flex-1 mb-6">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2.5 text-sm">
+                          <Check className="h-4 w-4 text-[hsl(184,97%,49%)] mt-0.5 shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      className={`w-full h-11 font-semibold ${
+                        plan.highlighted
+                          ? 'bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] hover:bg-[hsl(184,97%,42%)]'
+                          : ''
+                      }`}
+                      variant={plan.highlighted ? 'default' : 'outline'}
+                      disabled={isUnavailable}
+                      onClick={() => handleSelectPlan(priceId)}
+                    >
+                      {isUnavailable ? 'Apenas no plano anual' : 'Começar Agora'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
