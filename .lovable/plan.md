@@ -1,81 +1,34 @@
 
-# Problema Identificado: Link para Protocolos Ausente no Menu
 
-## Diagnóstico
+# Reposicionar Hero e adicionar seção "Dor do Receita Saúde"
 
-A página `/contador/protocolos` existe e está corretamente registrada no roteamento (`App.tsx` linha 86), porém **não há link para ela no menu lateral** (`ContadorSidebar.tsx`).
+## 1. Atualizar o Hero — mensagem de simplicidade
 
-O sidebar atual tem:
-- Conferência ✓
-- Protocolos ✗ (faltando)
+Alterar o subtítulo (linha 169-170) para reforçar que o Declara Psi é simples, rápido e direto — não é mais um sistema complexo cheio de telas e informações confusas.
 
-## Solução
+**Novo subtítulo:**
+> "Chega de sistemas complexos e cheios de informação. O Declara Psi é simples, rápido e direto: automatiza seu carnê-leão, DARF e obrigações fiscais para você focar no que importa."
 
-Adicionar o link para "Protocolos" no menu lateral, logo após "Conferência", dentro do módulo "Obrigações".
+## 2. Nova seção "Receita Saúde sem caderninho" — logo após o Hero, antes dos Benefícios
 
----
+Uma seção de alto impacto visual posicionada entre o Hero e os Benefícios, atacando a dor principal: copiar e colar CPF de pacientes em planilhas/caderninhos para emitir o Receita Saúde.
 
-## Alteração Necessária
+**Estrutura:** Layout lado a lado (texto + 3 mini pain-points com ícones de "antes vs depois"):
 
-### Arquivo: `src/components/contador/ContadorSidebar.tsx`
+- **Título:** "Nunca mais copie CPF de caderninho para o Receita Saúde"
+- **Subtítulo:** "Seus pacientes ficam cadastrados. Nós emitimos o Receita Saúde para você — sem planilha, sem erro, sem estresse."
+- **3 cards comparativos (Antes → Depois):**
+  1. Antes: "Caderninho com CPFs e valores" → Depois: "Pacientes cadastrados no app"
+  2. Antes: "Copiar e colar no Receita Saúde" → Depois: "Emissão automática por nós"
+  3. Antes: "Medo de errar dados fiscais" → Depois: "Tudo conferido pela nossa equipe"
+- **CTA:** "Quero parar de sofrer com planilhas" → scroll para planos
 
-**Localização:** Módulo "Obrigações" (linhas 36-45)
+### Detalhes técnicos
 
-**Antes:**
-```typescript
-{
-  id: 'obrigacoes',
-  title: 'Obrigações',
-  icon: ClipboardList,
-  items: [
-    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
-    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
-    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
-    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
-  ]
-}
-```
+**Arquivo:** `src/pages/LandingPage.tsx`
 
-**Depois:**
-```typescript
-{
-  id: 'obrigacoes',
-  title: 'Obrigações',
-  icon: ClipboardList,
-  items: [
-    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
-    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
-    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
-    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
-    { icon: Send, label: 'Protocolos', path: '/contador/protocolos' },
-  ]
-}
-```
+- Atualizar texto do `<p>` no Hero (linha 169-170)
+- Inserir nova `<section>` entre o Hero (linha 196) e a seção Benefícios (linha 198)
+- Usar ícones do lucide-react existentes (ex: `ClipboardX`, `ClipboardCheck`, `NotebookPen`, `Zap`)
+- Estilo consistente com o restante da página (cards com sombra, cores do tema)
 
-### Ícone a Adicionar
-
-Importar o ícone `Send` do lucide-react (representa envio de documentos).
-
----
-
-## Resumo das Alterações
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/contador/ContadorSidebar.tsx` | Adicionar import do ícone `Send` e novo item de menu "Protocolos" |
-
----
-
-## Resultado Esperado
-
-Após a alteração, o menu lateral exibirá:
-
-```
-📊 Gestão
-📅 Calendário
-📈 Relatórios
-📄 Conferência
-✉️ Protocolos  ← NOVO
-```
-
-Isso permitirá acesso direto à página de Protocolos que lista todos os documentos enviados aos clientes.
