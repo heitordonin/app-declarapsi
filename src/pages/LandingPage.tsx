@@ -168,7 +168,7 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Automatize carnê-leão, DARF e obrigações fiscais. Pare de perder horas com planilhas e tenha tudo organizado em um só lugar.
+              Chega de sistemas complexos e cheios de informação. O Declara Psi é simples, rápido e direto: automatiza seu carnê-leão, DARF e obrigações fiscais para você focar no que importa.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" onClick={() => scrollTo('planos')} className="bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] hover:bg-[hsl(184,97%,42%)] font-semibold text-base px-8 h-12">
