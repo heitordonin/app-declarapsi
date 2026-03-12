@@ -1,53 +1,81 @@
 
+# Problema Identificado: Link para Protocolos Ausente no Menu
 
-# Landing Page — Declara Psi
+## Diagnóstico
 
-## Objetivo
-Criar uma landing page profissional em `/` (rota raiz para visitantes não autenticados), focada em conversão e SEO, com seção de planos preparada para integração futura com Stripe.
+A página `/contador/protocolos` existe e está corretamente registrada no roteamento (`App.tsx` linha 86), porém **não há link para ela no menu lateral** (`ContadorSidebar.tsx`).
 
-## Estrutura da Página
+O sidebar atual tem:
+- Conferência ✓
+- Protocolos ✗ (faltando)
 
-### Seções
-1. **Navbar** — Logo + links âncora (Benefícios, Como Funciona, Planos, FAQ) + botão "Entrar" e "Começar Agora"
-2. **Hero** — Headline forte, subtítulo, CTA principal, imagem/ilustração abstrata
-3. **Logos / Prova Social** — "Mais de X psicólogos confiam na Declara Psi"
-4. **Benefícios** — 4-6 cards com ícones (Lucide): gestão financeira, obrigações fiscais, relatórios, segurança, etc.
-5. **Como Funciona** — 3 passos numerados com ícones
-6. **Planos e Preços** — 3 cards (Essencial R$97/mês, Profissional R$197/mês, Consultório R$347/mês) com lista de features e CTA. Cada card terá um `priceId` placeholder para Stripe
-7. **Depoimentos** — 3 cards com foto placeholder, nome fictício, especialidade
-8. **FAQ** — Accordion com 5-6 perguntas comuns
-9. **CTA Final** — Seção de conversão com botão
-10. **Footer** — Links, contato, redes sociais
+## Solução
 
-### SEO
-- Atualizar `index.html` com meta tags otimizadas (title, description, og:title, og:description, og:image)
-- Semantic HTML (h1, h2, sections, nav, footer)
-- `robots.txt` já está configurado
+Adicionar o link para "Protocolos" no menu lateral, logo após "Conferência", dentro do módulo "Obrigações".
 
-### Preparação para Stripe
-- Cada plano terá um objeto com `name`, `price`, `priceId` (placeholder string como `price_essencial_monthly`), `features[]`
-- O botão de cada plano chamará uma função `handleSelectPlan(priceId)` que por enquanto redireciona para `/auth`
-- Quando Stripe for integrado, basta trocar os `priceId` pelos IDs reais e implementar o checkout
+---
 
-## Arquivos
+## Alteração Necessária
 
-### Novos
-- `src/pages/LandingPage.tsx` — Página completa com todas as seções
+### Arquivo: `src/components/contador/ContadorSidebar.tsx`
 
-### Modificados
-- `src/App.tsx` — Alterar `RootRedirect` para mostrar a landing page quando não autenticado (em vez de redirecionar para `/auth`)
-- `index.html` — Meta tags SEO atualizadas
+**Localização:** Módulo "Obrigações" (linhas 36-45)
 
-## Cores e Branding
-- Primary: #002471 (navy blue, já configurado como `--primary`)
-- Accent: #03f6f9 (cyan, usado como destaque)
-- Logo existente: `src/assets/logo-declara-psi.png`
+**Antes:**
+```typescript
+{
+  id: 'obrigacoes',
+  title: 'Obrigações',
+  icon: ClipboardList,
+  items: [
+    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
+    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
+    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
+    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+  ]
+}
+```
 
-## Planos (valores fictícios)
+**Depois:**
+```typescript
+{
+  id: 'obrigacoes',
+  title: 'Obrigações',
+  icon: ClipboardList,
+  items: [
+    { icon: BarChart, label: 'Gestão', path: '/contador/gestao' },
+    { icon: CalendarDays, label: 'Calendário', path: '/contador/obrigacoes' },
+    { icon: PieChart, label: 'Relatórios', path: '/contador/relatorios' },
+    { icon: FileText, label: 'Conferência', path: '/contador/conferencia' },
+    { icon: Send, label: 'Protocolos', path: '/contador/protocolos' },
+  ]
+}
+```
 
-| Plano | Preço | Destaques |
-|-------|-------|-----------|
-| Essencial | R$ 97/mês | Até 20 pacientes, gestão financeira básica, relatórios mensais |
-| Profissional | R$ 197/mês | Até 80 pacientes, carnê-leão automático, suporte prioritário |
-| Consultório | R$ 347/mês | Pacientes ilimitados, multi-profissional, API de integração |
+### Ícone a Adicionar
 
+Importar o ícone `Send` do lucide-react (representa envio de documentos).
+
+---
+
+## Resumo das Alterações
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/contador/ContadorSidebar.tsx` | Adicionar import do ícone `Send` e novo item de menu "Protocolos" |
+
+---
+
+## Resultado Esperado
+
+Após a alteração, o menu lateral exibirá:
+
+```
+📊 Gestão
+📅 Calendário
+📈 Relatórios
+📄 Conferência
+✉️ Protocolos  ← NOVO
+```
+
+Isso permitirá acesso direto à página de Protocolos que lista todos os documentos enviados aos clientes.
