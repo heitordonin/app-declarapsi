@@ -196,6 +196,77 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Receita Saúde Pain Point */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <Badge variant="secondary" className="mb-5 px-4 py-1.5 text-sm font-medium">
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
+              A maior dor resolvida
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Nunca mais copie CPF de caderninho para o{' '}
+              <span className="text-[hsl(var(--primary))]">Receita Saúde</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Seus pacientes ficam cadastrados. Nós emitimos o Receita Saúde para você — sem planilha, sem erro, sem estresse.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                beforeIcon: NotebookPen,
+                beforeText: 'Caderninho com CPFs e valores',
+                afterIcon: ClipboardCheck,
+                afterText: 'Pacientes cadastrados no app',
+              },
+              {
+                beforeIcon: ClipboardX,
+                beforeText: 'Copiar e colar no Receita Saúde',
+                afterIcon: Zap,
+                afterText: 'Emissão automática por nós',
+              },
+              {
+                beforeIcon: AlertTriangle,
+                beforeText: 'Medo de errar dados fiscais',
+                afterIcon: ShieldCheck,
+                afterText: 'Tudo conferido pela nossa equipe',
+              },
+            ].map((item, i) => (
+              <Card key={i} className="border-0 shadow-md overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="p-5 bg-destructive/5 border-b border-destructive/10">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-destructive mb-3 uppercase tracking-wide">
+                      <X className="h-3.5 w-3.5" /> Antes
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <item.beforeIcon className="h-5 w-5 text-destructive/60 mt-0.5 shrink-0" />
+                      <span className="text-sm text-muted-foreground">{item.beforeText}</span>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-[hsl(184,97%,49%)]/5">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[hsl(184,97%,40%)] mb-3 uppercase tracking-wide">
+                      <Check className="h-3.5 w-3.5" /> Depois
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <item.afterIcon className="h-5 w-5 text-[hsl(184,97%,40%)] mt-0.5 shrink-0" />
+                      <span className="text-sm font-medium">{item.afterText}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Button size="lg" onClick={() => scrollTo('planos')} className="bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] hover:bg-[hsl(184,97%,42%)] font-semibold text-base px-8 h-12">
+              Quero parar de sofrer com planilhas <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Benefits */}
       <section id="beneficios" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/50">
         <div className="max-w-7xl mx-auto">
