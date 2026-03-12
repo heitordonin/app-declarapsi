@@ -187,7 +187,7 @@ export function ObrigacoesInstancesList({ selectedDate }: ObrigacoesInstancesLis
             <div key={dateKey} className="space-y-3 min-w-0">
               <div className="flex items-baseline justify-between border-b pb-2 gap-2">
                 <h3 className="text-lg font-semibold uppercase">
-                  {format(new Date(dateKey), "EEE, dd/MM/yyyy", { locale: ptBR })}
+                  {format(new Date(dateKey + 'T00:00:00'), "EEE, dd/MM/yyyy", { locale: ptBR })}
                 </h3>
                 <span className="text-sm text-muted-foreground">
                   {totalCompleted}/{totalInstances} concluídas

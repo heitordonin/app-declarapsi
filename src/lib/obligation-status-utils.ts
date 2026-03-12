@@ -81,7 +81,9 @@ export function getEffectiveStatus(
   }
 
   const now = new Date();
-  const targetDate = new Date(internalTargetAt);
+  const targetDate = typeof internalTargetAt === 'string' 
+    ? new Date(internalTargetAt + 'T00:00:00') 
+    : internalTargetAt;
   
   // Comparar apenas as datas (ignorando horário)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
