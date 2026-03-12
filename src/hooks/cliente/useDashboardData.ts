@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientId } from './useClientId';
+import { format } from 'date-fns';
 
 interface DashboardData {
   kpis: {
