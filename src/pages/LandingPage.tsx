@@ -90,6 +90,7 @@ const faqs = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<'anual' | 'mensal'>('anual');
 
   const handleSelectPlan = (priceId: string) => {
     // Ready for Stripe: replace with checkout session creation
