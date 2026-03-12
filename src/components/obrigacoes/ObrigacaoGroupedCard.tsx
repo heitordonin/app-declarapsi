@@ -49,7 +49,7 @@ export function ObrigacaoGroupedCard({
                 {competence}
               </Badge>
               <Badge variant="secondary" className="text-xs">
-                Prazo: {format(new Date(internal_target_at), 'dd/MM/yyyy', { locale: ptBR })}
+                Prazo: {format(new Date(internal_target_at + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
               </Badge>
             </div>
           </div>

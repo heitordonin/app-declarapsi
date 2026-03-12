@@ -16,8 +16,8 @@ interface DashboardData {
 
 export function useDashboardData(startDate: Date, endDate: Date): DashboardData {
   const { clientId } = useClientId();
-  const startDateStr = startDate.toISOString().split('T')[0];
-  const endDateStr = endDate.toISOString().split('T')[0];
+  const startDateStr = format(startDate, 'yyyy-MM-dd');
+  const endDateStr = format(endDate, 'yyyy-MM-dd');
 
   // Query para receitas (cobranças pagas no período)
   const { data: chargesData, isLoading: chargesLoading } = useQuery({

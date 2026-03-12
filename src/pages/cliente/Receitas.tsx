@@ -44,14 +44,14 @@ export default function Receitas() {
 
     // Due date range filter
     if (filters.dueDateStart) {
-      const chargeDate = new Date(charge.due_date);
-      const startDate = new Date(filters.dueDateStart);
+      const chargeDate = new Date(charge.due_date + 'T00:00:00');
+      const startDate = new Date(filters.dueDateStart + 'T00:00:00');
       if (chargeDate < startDate) return false;
     }
 
     if (filters.dueDateEnd) {
-      const chargeDate = new Date(charge.due_date);
-      const endDate = new Date(filters.dueDateEnd);
+      const chargeDate = new Date(charge.due_date + 'T00:00:00');
+      const endDate = new Date(filters.dueDateEnd + 'T00:00:00');
       if (chargeDate > endDate) return false;
     }
 

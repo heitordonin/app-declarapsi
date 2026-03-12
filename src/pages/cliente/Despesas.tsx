@@ -41,13 +41,13 @@ export default function Despesas() {
 
     // Date filter
     if (filters.dateStart) {
-      const expenseDate = new Date(expense.paymentDate);
-      const filterDate = new Date(filters.dateStart);
+      const expenseDate = new Date(expense.paymentDate + 'T00:00:00');
+      const filterDate = new Date(filters.dateStart + 'T00:00:00');
       if (expenseDate < filterDate) return false;
     }
     if (filters.dateEnd) {
-      const expenseDate = new Date(expense.paymentDate);
-      const filterDate = new Date(filters.dateEnd);
+      const expenseDate = new Date(expense.paymentDate + 'T00:00:00');
+      const filterDate = new Date(filters.dateEnd + 'T00:00:00');
       if (expenseDate > filterDate) return false;
     }
 

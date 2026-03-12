@@ -47,7 +47,7 @@ export function ObrigacaoInstanceCard({ instance }: ObrigacaoInstanceCardProps) 
   const completeMutation = useMutation({
     mutationFn: async (notes: string) => {
       const now = new Date();
-      const dueDate = new Date(instance.internal_target_at);
+      const dueDate = new Date(instance.internal_target_at + 'T00:00:00');
       const isLate = now > dueDate;
       const newStatus = isLate ? 'late_done' : 'on_time_done';
 
