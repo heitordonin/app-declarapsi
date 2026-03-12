@@ -49,7 +49,7 @@ function RootRedirect() {
   if (loading) return null;
   
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <LandingPage />;
   }
 
   if (role === 'admin') {
