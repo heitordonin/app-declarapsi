@@ -360,7 +360,7 @@ export default function LandingPage() {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">Pronto para simplificar sua contabilidade?</h2>
           <p className="text-muted-foreground text-lg mb-8">Junte-se a mais de 500 psicólogos que já confiam na Declara Psi.</p>
           <Button size="lg" onClick={() => scrollTo('planos')} className="bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] hover:bg-[hsl(184,97%,42%)] font-semibold text-base px-10 h-12">
-            Começar Meus 14 Dias Grátis <ChevronRight className="ml-2 h-5 w-5" />
+            Começar Meus 7 Dias Grátis <ChevronRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </section>
