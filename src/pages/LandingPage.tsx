@@ -92,8 +92,8 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'anual' | 'mensal'>('anual');
 
-  const handleSelectPlan = (priceId: string) => {
-    // Ready for Stripe: replace with checkout session creation
+  const handleSelectPlan = (priceId: string | null) => {
+    if (!priceId) return;
     navigate('/auth');
   };
 
