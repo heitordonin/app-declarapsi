@@ -156,7 +156,7 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center">
             <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm font-medium">
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              14 dias grátis — sem cartão de crédito
+              7 dias grátis — sem cartão de crédito
             </Badge>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6">
               Contabilidade para{' '}
