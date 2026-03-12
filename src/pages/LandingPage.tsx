@@ -391,7 +391,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
-              <img src={logo} alt="Declara Psi" className="h-8 mb-4 brightness-0 invert" />
+              <img src={logo} alt="Declara Psi" className="h-10 mb-4 brightness-0 invert" />
               <p className="text-sm opacity-70">Contabilidade inteligente para profissionais da psicologia.</p>
             </div>
             <div>
