@@ -86,7 +86,7 @@ const faqs = [
   { question: 'Posso trocar de plano depois?', answer: 'Sim! Você pode fazer upgrade ou downgrade a qualquer momento. A mudança é proporcional ao período restante.' },
   { question: 'A Declara Psi substitui meu contador?', answer: 'Trabalhamos em conjunto com seu contador. O sistema organiza e automatiza suas informações financeiras, facilitando o trabalho do seu contador e reduzindo custos.' },
   { question: 'Tem contrato de fidelidade?', answer: 'Não. Nossos planos são mensais e você pode cancelar quando quiser, sem multa ou burocracia.' },
-  { question: 'Como funciona o período de teste?', answer: 'Oferecemos 14 dias gratuitos em qualquer plano, sem necessidade de cartão de crédito. Você testa tudo antes de decidir.' },
+  { question: 'Como funciona o período de teste?', answer: 'Oferecemos 7 dias gratuitos em qualquer plano, sem necessidade de cartão de crédito. Você testa tudo antes de decidir.' },
 ];
 
 export default function LandingPage() {
@@ -156,7 +156,7 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto text-center">
             <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm font-medium">
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              14 dias grátis — sem cartão de crédito
+              7 dias grátis — sem cartão de crédito
             </Badge>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6">
               Contabilidade para{' '}
@@ -247,7 +247,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Planos que cabem no seu bolso</h2>
-            <p className="text-muted-foreground text-lg">14 dias grátis em qualquer plano. Cancele quando quiser.</p>
+            <p className="text-muted-foreground text-lg">7 dias grátis em qualquer plano. Cancele quando quiser.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
             {plans.map((plan) => (
@@ -360,7 +360,7 @@ export default function LandingPage() {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">Pronto para simplificar sua contabilidade?</h2>
           <p className="text-muted-foreground text-lg mb-8">Junte-se a mais de 500 psicólogos que já confiam na Declara Psi.</p>
           <Button size="lg" onClick={() => scrollTo('planos')} className="bg-[hsl(184,97%,49%)] text-[hsl(221,83%,30%)] hover:bg-[hsl(184,97%,42%)] font-semibold text-base px-10 h-12">
-            Começar Meus 14 Dias Grátis <ChevronRight className="ml-2 h-5 w-5" />
+            Começar Meus 7 Dias Grátis <ChevronRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </section>
