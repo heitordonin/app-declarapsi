@@ -247,7 +247,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Planos que cabem no seu bolso</h2>
-            <p className="text-muted-foreground text-lg">14 dias grátis em qualquer plano. Cancele quando quiser.</p>
+            <p className="text-muted-foreground text-lg">7 dias grátis em qualquer plano. Cancele quando quiser.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
             {plans.map((plan) => (
