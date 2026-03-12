@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
+import LandingPage from "./pages/LandingPage";
 import AuthCallback from "./pages/AuthCallback";
 import CadastroPaciente from "./pages/CadastroPaciente";
 import ContadorLayout from "./pages/contador/ContadorLayout";
