@@ -8,7 +8,8 @@ import logo from '@/assets/logo-declara-psi.png';
 import {
   Calculator, Shield, FileText, BarChart3, Clock, Users,
   ChevronRight, Check, Star, ArrowRight, Brain, Sparkles,
-  MessageCircle, Phone, Mail, Instagram, Menu, X
+  MessageCircle, Phone, Mail, Instagram, Menu, X,
+  ClipboardX, ClipboardCheck, NotebookPen, Zap, AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import { useState } from 'react';
 
