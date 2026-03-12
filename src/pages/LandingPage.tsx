@@ -86,7 +86,7 @@ const faqs = [
   { question: 'Posso trocar de plano depois?', answer: 'Sim! Você pode fazer upgrade ou downgrade a qualquer momento. A mudança é proporcional ao período restante.' },
   { question: 'A Declara Psi substitui meu contador?', answer: 'Trabalhamos em conjunto com seu contador. O sistema organiza e automatiza suas informações financeiras, facilitando o trabalho do seu contador e reduzindo custos.' },
   { question: 'Tem contrato de fidelidade?', answer: 'Não. Nossos planos são mensais e você pode cancelar quando quiser, sem multa ou burocracia.' },
-  { question: 'Como funciona o período de teste?', answer: 'Oferecemos 14 dias gratuitos em qualquer plano, sem necessidade de cartão de crédito. Você testa tudo antes de decidir.' },
+  { question: 'Como funciona o período de teste?', answer: 'Oferecemos 7 dias gratuitos em qualquer plano, sem necessidade de cartão de crédito. Você testa tudo antes de decidir.' },
 ];
 
 export default function LandingPage() {
