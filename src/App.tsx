@@ -44,7 +44,7 @@ const queryClient = new QueryClient({
 });
 
 function RootRedirect() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, signOut } = useAuth();
 
   if (loading) return null;
   
@@ -58,7 +58,9 @@ function RootRedirect() {
     return <Navigate to="/cliente" replace />;
   }
 
-  return <Navigate to="/auth" replace />;
+  // Usuário logado sem role válida — deslogar e mostrar landing
+  signOut();
+  return <LandingPage />;
 }
 
 const App = () => (
